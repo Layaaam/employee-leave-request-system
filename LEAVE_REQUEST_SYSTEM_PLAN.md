@@ -202,12 +202,12 @@ The final submission requires a written implementation summary of three to five 
 - [x] Record environment credentials (project URL, anonymous key, service-role key)
 
 ### Phase 1 — Database Foundation
-- [ ] Create `profiles` table and associated role enumeration
-- [ ] Create `leave_types` table
-- [ ] Create `leave_requests` table and associated status enumeration
-- [ ] Apply indexing strategy as specified in Section 3.2
-- [ ] Implement Row Level Security policies for `leave_types` and `leave_requests`
-- [ ] Implement trigger to auto-provision `profiles` record upon registration
+- [x] Create `profiles` table and associated role enumeration
+- [x] Create `leave_types` table
+- [x] Create `leave_requests` table and associated status enumeration
+- [x] Apply indexing strategy as specified in Section 3.2
+- [x] Implement Row Level Security policies for `leave_types` and `leave_requests`
+- [x] Implement trigger to auto-provision `profiles` record upon registration
 
 ### Phase 2 — Initial Data
 - [ ] Populate representative leave types

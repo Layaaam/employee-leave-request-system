@@ -11,7 +11,7 @@ A web-based leave request system built for a software developer practical exam. 
 Currently in active development. See [`Leave_Request_System_Plan.md`](./LEAVE_REQUEST_SYSTEM_PLAN.md) for the full implementation plan and phase-by-phase checklist.
 
 - [x] **Phase 0 — Project Setup**
-- [ ] Phase 1 — Database Foundation
+- [x] Phase 1 — Database Foundation
 - [ ] Phase 2 — Seed Data
 - [ ] Phase 3 — Core Application (Employee)
 - [ ] Phase 4 — Core Application (Admin)
