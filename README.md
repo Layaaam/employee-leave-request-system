@@ -1,36 +1,99 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Employee Leave Request System
 
-## Getting Started
+A web-based leave request system built for a software developer practical exam. Employees can submit and track their own leave requests; administrators/approvers can review, approve, or reject requests and manage leave types.
 
-First, run the development server:
+**Stack:** Next.js (TypeScript, App Router, Tailwind CSS) · Supabase (Postgres, Auth, Row Level Security) · Vercel
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+---
+
+## Status
+
+Currently in active development. See [`Leave_Request_System_Plan.md`](./LEAVE_REQUEST_SYSTEM_PLAN.md) for the full implementation plan and phase-by-phase checklist.
+
+- [x] **Phase 0 — Project Setup**
+- [ ] Phase 1 — Database Foundation
+- [ ] Phase 2 — Seed Data
+- [ ] Phase 3 — Core Application (Employee)
+- [ ] Phase 4 — Core Application (Admin)
+- [ ] Phase 5 — Reliability & Ops Hooks
+- [ ] Phase 6 — Testing
+- [ ] Phase 7 — Deployment
+- [ ] Phase 8 — Submission
+
+---
+
+## Tech Stack & Architecture
+
+| Layer | Choice |
+|---|---|
+| Frontend | Next.js (App Router), Tailwind CSS |
+| Auth | Supabase Auth (stateless JWT) |
+| Database | Supabase Postgres |
+| Access control | Row Level Security (RLS) policies at the database layer |
+| Hosting | Vercel (free tier) |
+
+Role-based access control is enforced primarily through Postgres RLS policies, not just in application code — employees can only read/write their own leave requests, and only administrators can manage leave types or approve/reject requests. Two server-only API routes (`/api/leave-requests/:id/approve` and `/reject`) handle the sensitive status-change actions using a service-role key that never reaches the browser.
+
+---
+
+## Getting Started (Local Development)
+
+### Prerequisites
+- Node.js 18+
+- A free [Supabase](https://supabase.com) account/project
+
+### Setup
+
+1. Clone the repo and install dependencies:
+   ```bash
+   git clone https://github.com/<your-username>/<repo-name>.git
+   cd <repo-name>
+   npm install
+   ```
+
+2. Copy the environment variable template and fill in your Supabase project's keys (**Project Settings → API**):
+   ```bash
+   cp .env.local.example .env.local
+   ```
+   ```
+   NEXT_PUBLIC_SUPABASE_URL=
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=
+   SUPABASE_SERVICE_ROLE_KEY=
+   ```
+   > `SUPABASE_SERVICE_ROLE_KEY` is server-only and must never be exposed to the client. It's used exclusively by the approve/reject API routes.
+
+3. Run the development server:
+   ```bash
+   npm run dev
+   ```
+   Visit [http://localhost:3000](http://localhost:3000).
+
+---
+
+## Project Structure
+
+```
+app/
+  api/health/         # Health check endpoint (used by keep-alive cron)
+  layout.tsx
+  page.tsx
+lib/
+  supabase/
+    client.ts          # Browser client — anon key, RLS-enforced
+    server.ts           # Server Component/Action client — anon key, RLS-enforced
+    service.ts          # Service-role client — server-only, bypasses RLS
+.env.local.example
+Leave_Request_System_Plan.md   # Full plan, data model, and checklist
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Deployment
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Deployed on Vercel's free tier. Environment variables must be set in the Vercel project dashboard (same three keys as `.env.local`). A scheduled GitHub Actions workflow pings `/api/health` periodically to prevent the Supabase free-tier project from auto-pausing after 7 days of inactivity.
 
-## Learn More
+---
 
-To learn more about Next.js, take a look at the following resources:
+## License
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Built for evaluation purposes as part of a software developer practical exam.
