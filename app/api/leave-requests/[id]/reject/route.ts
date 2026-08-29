@@ -1,0 +1,49 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@/lib/supabase/server'
+import { createServiceClient } from '@/lib/supabase/service'
+
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params
+
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    return NextResponse.redirect(new URL('/login', request.url), 303)
+  }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single()
+
+  if (profile?.role !== 'admin') {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
+  const formData = await request.formData()
+  const review_comment = (formData.get('review_comment') as string) || null
+
+  const service = createServiceClient()
+  const { error } = await service
+    .from('leave_requests')
+    .update({
+      status: 'rejected',
+      reviewed_by: user.id,
+      reviewed_at: new Date().toISOString(),
+      review_comment,
+    })
+    .eq('id', id)
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+
+  return NextResponse.redirect(new URL('/admin', request.url), 303)
+}
