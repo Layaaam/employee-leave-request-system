@@ -20,7 +20,6 @@ Currently in active development. See [`Leave_Request_System_Plan.md`](./LEAVE_RE
 - [x] Phase 5 — Reliability & Ops Hooks
 - [x] Phase 6 — Testing
 - [x] Phase 7 — Deployment
-- [ ] Phase 8 — Submission
 
 ---
 

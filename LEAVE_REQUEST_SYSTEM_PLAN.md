@@ -205,10 +205,3 @@ Each route verifies the caller's JWT, re-checks `role = admin` server-side, then
 - [x] Smoke-test both accounts on the live URL
 - [x] Set `HEALTH_CHECK_URL` repo variable and confirm keep-alive workflow run succeeds (deferred from Phase 5 — now verified live)
 
-### Phase 8 — Submission
-- [ ] Deployed system link
-- [ ] Employee account credentials
-- [ ] Admin account credentials
-- [ ] 3–5 paragraph implementation summary (see §7)
-- [ ] Brief usage notes for the evaluator
-- [ ] Confirm repo/DB access will remain stable through the eval window
