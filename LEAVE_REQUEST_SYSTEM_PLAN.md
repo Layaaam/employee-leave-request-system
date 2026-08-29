@@ -191,12 +191,12 @@ Each route verifies the caller's JWT, re-checks `role = admin` server-side, then
   - *Note: workflow created and confirmed locally; setting the `HEALTH_CHECK_URL` repo variable and running it live happens in Phase 7 once the app is deployed.*
 
 ### Phase 6 — Testing
-- [ ] Test employee flow end-to-end
-- [ ] Test admin flow end-to-end
-- [ ] Confirm RLS blocks cross-user access (employee A cannot see/edit employee B's requests)
-- [ ] Confirm RLS blocks non-admin from leave-type CRUD
-- [ ] Test filters/search/pagination
-- [ ] Confirm locked editing after request is reviewed
+- [x] Test employee flow end-to-end
+- [x] Test admin flow end-to-end
+- [x] Confirm RLS blocks cross-user access (employee A cannot see/edit employee B's requests)
+- [x] Confirm RLS blocks non-admin from leave-type CRUD
+- [x] Test filters/search/pagination
+- [x] Confirm locked editing after request is reviewed
 
 ### Phase 7 — Deployment
 - [ ] Import repo into Vercel
