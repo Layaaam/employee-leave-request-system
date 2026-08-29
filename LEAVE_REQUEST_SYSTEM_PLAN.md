@@ -186,8 +186,9 @@ Each route verifies the caller's JWT, re-checks `role = admin` server-side, then
 - [x] Implement `POST /api/leave-requests/:id/reject`
 
 ### Phase 5 — Reliability & Ops Hooks
-- [ ] Add `/api/health` endpoint for keep-alive
-- [ ] Set up GitHub Actions keep-alive cron (runs after deployment is live)
+- [x] Add `/api/health` endpoint for keep-alive
+- [x] Set up GitHub Actions keep-alive cron (runs after deployment is live)
+  - *Note: workflow created and confirmed locally; setting the `HEALTH_CHECK_URL` repo variable and running it live happens in Phase 7 once the app is deployed.*
 
 ### Phase 6 — Testing
 - [ ] Test employee flow end-to-end

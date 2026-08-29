@@ -15,7 +15,7 @@ Currently in active development. See [`Leave_Request_System_Plan.md`](./LEAVE_RE
 - [x] Phase 2 — Seed Data
 - [x] Phase 3 — Core Application (Employee)
 - [x] Phase 4 — Core Application (Admin)
-- [ ] Phase 5 — Reliability & Ops Hooks
+- [x] Phase 5 — Reliability & Ops Hooks
 - [ ] Phase 6 — Testing
 - [ ] Phase 7 — Deployment
 - [ ] Phase 8 — Submission
