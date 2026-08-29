@@ -66,8 +66,6 @@ export default function AdminRequestTable({ requests }: { requests: AdminLeaveRe
                   </button>
                   {r.status === 'pending' && (
                     <>
-                      {/* Plain native form POST directly to the trusted API route — no
-                          client JS needed, browser handles the request and redirect. */}
                       <form
                         action={`/api/leave-requests/${r.id}/approve`}
                         method="POST"

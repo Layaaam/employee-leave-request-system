@@ -47,8 +47,6 @@ export default async function DashboardPage({
     .eq('id', user.id)
     .single()
 
-  // Now that /admin exists, keep admins on their own console instead of
-  // showing them the employee view (deferred here since Phase 3, per plan).
   if (profile?.role === 'admin') {
     redirect('/admin')
   }
@@ -56,9 +54,6 @@ export default async function DashboardPage({
   const page = Math.max(1, Number(sp.page) || 1)
   const from = (page - 1) * PAGE_SIZE
   const to = from + PAGE_SIZE - 1
-
-  // Server-side filtering, sorting, and pagination — never fetch-all-then-
-  // filter client-side (per the plan's performance guidance).
   let query = supabase
     .from('leave_requests')
     .select('*, leave_type:leave_types(id, name)', { count: 'exact' })

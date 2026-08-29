@@ -19,9 +19,7 @@ export default async function AdminLayout({ children }: { children: ReactNode })
     .select('full_name, role')
     .eq('id', user.id)
     .single()
-
-  // Route-level enforcement, on top of RLS: a non-admin who navigates here
-  // directly is bounced back to their own dashboard.
+    
   if (profile?.role !== 'admin') {
     redirect('/dashboard')
   }

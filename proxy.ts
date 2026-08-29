@@ -1,9 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-// Refreshes the Supabase auth session cookie on every request.
-// Required by @supabase/ssr so Server Components always see a valid session
-// instead of one that silently expired between requests.
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request })
 
@@ -26,7 +23,6 @@ export async function proxy(request: NextRequest) {
     }
   )
 
-  // Touching auth.getUser() is what actually triggers the refresh.
   await supabase.auth.getUser()
 
   return response

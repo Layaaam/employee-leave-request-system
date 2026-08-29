@@ -34,9 +34,6 @@ export default async function AdminRequestsPage({
   const from = (page - 1) * PAGE_SIZE
   const to = from + PAGE_SIZE - 1
 
-  // Both employee_id and reviewed_by reference profiles, so each embed
-  // needs its FK explicitly named to disambiguate — avoids a second
-  // round trip per row (no N+1) while resolving the ambiguity.
   let query = supabase
     .from('leave_requests')
     .select(

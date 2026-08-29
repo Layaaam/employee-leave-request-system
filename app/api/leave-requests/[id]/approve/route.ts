@@ -8,8 +8,6 @@ export async function POST(
 ) {
   const { id } = await params
 
-  // Verify identity and role using the normal RLS-enforced client — never
-  // trust a role claimed by the client itself.
   const supabase = await createClient()
   const {
     data: { user },
@@ -29,8 +27,6 @@ export async function POST(
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
-  // Only after the role check passes do we use the service-role client,
-  // which bypasses RLS to apply the status change.
   const service = createServiceClient()
   const { error } = await service
     .from('leave_requests')
@@ -46,6 +42,5 @@ export async function POST(
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
-  // 303: ensures the browser follows with GET, not a repeated POST.
   return NextResponse.redirect(new URL('/admin', request.url), 303)
 }

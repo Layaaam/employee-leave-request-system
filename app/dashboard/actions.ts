@@ -51,10 +51,6 @@ export async function updateLeaveRequest(id: string, formData: FormData) {
   const end_date = formData.get('end_date') as string
   const days_requested = Number(formData.get('days_requested'))
   const reason = (formData.get('reason') as string) || null
-
-  // No manual ownership/status check needed here — RLS (Phase 1) already
-  // restricts this update to the caller's own rows while status = 'pending'.
-  // If the row isn't eligible, Postgres returns zero rows affected / an error.
   const { error } = await supabase
     .from('leave_requests')
     .update({ leave_type_id, start_date, end_date, days_requested, reason })

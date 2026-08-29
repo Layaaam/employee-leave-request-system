@@ -24,7 +24,7 @@ export default function FilterBar({
     } else {
       params.delete(key)
     }
-    params.delete('page') // reset to page 1 whenever a filter changes
+    params.delete('page')
     router.push(`${pathname}?${params.toString()}`)
   }
 
