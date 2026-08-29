@@ -1,0 +1,18 @@
+name: Keep Supabase Alive
+
+on:
+  schedule:
+    - cron: '0 0 */3 * *' 
+  workflow_dispatch: 
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping health check endpoint
+        run: |
+          if [ -z "${{ vars.HEALTH_CHECK_URL }}" ]; then
+            echo "HEALTH_CHECK_URL repository variable is not set. Skipping (this is expected before Phase 7 deployment)."
+            exit 0
+          fi
+          curl -sf "${{ vars.HEALTH_CHECK_URL }}" || exit 1
