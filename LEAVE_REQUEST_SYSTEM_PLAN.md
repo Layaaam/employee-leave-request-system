@@ -199,10 +199,11 @@ Each route verifies the caller's JWT, re-checks `role = admin` server-side, then
 - [x] Confirm locked editing after request is reviewed
 
 ### Phase 7 — Deployment
-- [ ] Import repo into Vercel
-- [ ] Set env vars in Vercel dashboard
-- [ ] Deploy and verify live URL loads
-- [ ] Smoke-test both accounts on the live URL
+- [x] Import repo into Vercel
+- [x] Set env vars in Vercel dashboard
+- [x] Deploy and verify live URL loads
+- [x] Smoke-test both accounts on the live URL
+- [x] Set `HEALTH_CHECK_URL` repo variable and confirm keep-alive workflow run succeeds (deferred from Phase 5 — now verified live)
 
 ### Phase 8 — Submission
 - [ ] Deployed system link

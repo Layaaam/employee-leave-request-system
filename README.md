@@ -4,6 +4,8 @@ A web-based leave request system built for a software developer practical exam. 
 
 **Stack:** Next.js (TypeScript, App Router, Tailwind CSS) · Supabase (Postgres, Auth, Row Level Security) · Vercel
 
+**Live deployment:** https://employee-leave-request-system.vercel.app
+
 ---
 
 ## Status
@@ -17,7 +19,7 @@ Currently in active development. See [`Leave_Request_System_Plan.md`](./LEAVE_RE
 - [x] Phase 4 — Core Application (Admin)
 - [x] Phase 5 — Reliability & Ops Hooks
 - [x] Phase 6 — Testing
-- [ ] Phase 7 — Deployment
+- [x] Phase 7 — Deployment
 - [ ] Phase 8 — Submission
 
 ---
