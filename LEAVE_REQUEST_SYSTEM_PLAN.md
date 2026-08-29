@@ -174,16 +174,16 @@ Each route verifies the caller's JWT, re-checks `role = admin` server-side, then
 - [x] Create admin handover account (manually set `role = admin`)
 
 ### Phase 3 — Core Application (Employee)
-- [ ] Build `/login` page (login/logout)
-- [ ] Build employee dashboard: create/view/update/delete own requests
-- [ ] Build status/detail view for leave requests
-- [ ] Build search/filter UI (by status, leave type, date, text)
+- [x] Build `/login` page (login/logout)
+- [x] Build employee dashboard: create/view/update/delete own requests
+- [x] Build status/detail view for leave requests
+- [x] Build search/filter UI (by status, leave type, date, text)
 
 ### Phase 4 — Core Application (Admin)
-- [ ] Build admin view: all requests, approve/reject
-- [ ] Build admin leave-type CRUD UI
-- [ ] Implement `POST /api/leave-requests/:id/approve`
-- [ ] Implement `POST /api/leave-requests/:id/reject`
+- [x] Build admin view: all requests, approve/reject
+- [x] Build admin leave-type CRUD UI
+- [x] Implement `POST /api/leave-requests/:id/approve`
+- [x] Implement `POST /api/leave-requests/:id/reject`
 
 ### Phase 5 — Reliability & Ops Hooks
 - [ ] Add `/api/health` endpoint for keep-alive

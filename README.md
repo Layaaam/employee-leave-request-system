@@ -13,8 +13,8 @@ Currently in active development. See [`Leave_Request_System_Plan.md`](./LEAVE_RE
 - [x] **Phase 0 — Project Setup**
 - [x] Phase 1 — Database Foundation
 - [x] Phase 2 — Seed Data
-- [ ] Phase 3 — Core Application (Employee)
-- [ ] Phase 4 — Core Application (Admin)
+- [x] Phase 3 — Core Application (Employee)
+- [x] Phase 4 — Core Application (Admin)
 - [ ] Phase 5 — Reliability & Ops Hooks
 - [ ] Phase 6 — Testing
 - [ ] Phase 7 — Deployment
