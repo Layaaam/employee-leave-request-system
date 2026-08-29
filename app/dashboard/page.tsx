@@ -47,6 +47,12 @@ export default async function DashboardPage({
     .eq('id', user.id)
     .single()
 
+  // Now that /admin exists, keep admins on their own console instead of
+  // showing them the employee view (deferred here since Phase 3, per plan).
+  if (profile?.role === 'admin') {
+    redirect('/admin')
+  }
+
   const page = Math.max(1, Number(sp.page) || 1)
   const from = (page - 1) * PAGE_SIZE
   const to = from + PAGE_SIZE - 1
