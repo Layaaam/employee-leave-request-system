@@ -3,6 +3,10 @@
 import { useState, type FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { toast } from 'sonner'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -23,6 +27,7 @@ export default function LoginPage() {
 
     if (error) {
       setError(error.message)
+      toast.error('Sign in failed', { description: error.message })
       return
     }
 
@@ -33,55 +38,45 @@ export default function LoginPage() {
   return (
     <main className="flex-1 flex items-center justify-center p-6">
       <div className="w-full max-w-sm">
-        <h1 className="text-xl font-semibold text-slate-900 mb-1">
+        <h1 className="text-xl font-semibold text-foreground mb-1">
           Employee Leave Request System
         </h1>
-        <p className="text-sm text-slate-500 mb-6">Sign in to continue.</p>
+        <p className="text-sm text-muted-foreground mb-6">Sign in to continue.</p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-1">
-              Email
-            </label>
-            <input
+          <div className="space-y-1.5">
+            <Label htmlFor="email">Email</Label>
+            <Input
               id="email"
               type="email"
               autoComplete="email"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900"
             />
           </div>
 
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-slate-700 mb-1">
-              Password
-            </label>
-            <input
+          <div className="space-y-1.5">
+            <Label htmlFor="password">Password</Label>
+            <Input
               id="password"
               type="password"
               autoComplete="current-password"
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900"
             />
           </div>
 
           {error && (
-            <p role="alert" className="text-sm text-red-600">
+            <p role="alert" className="text-sm text-destructive">
               {error}
             </p>
           )}
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-md bg-slate-900 text-white text-sm font-medium py-2 hover:bg-slate-800 disabled:opacity-50"
-          >
+          <Button type="submit" disabled={loading} className="w-full">
             {loading ? 'Signing in…' : 'Sign in'}
-          </button>
+          </Button>
         </form>
       </div>
     </main>
