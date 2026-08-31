@@ -1,18 +1,15 @@
-const STYLES: Record<string, string> = {
-  pending: 'bg-amber-100 text-amber-800',
-  approved: 'bg-emerald-100 text-emerald-800',
-  rejected: 'bg-red-100 text-red-800',
-  cancelled: 'bg-slate-100 text-slate-600',
-}
+import { Badge } from '@/components/ui/badge'
+
+const VALID_STATUSES = ['pending', 'approved', 'rejected', 'cancelled'] as const
 
 export default function StatusBadge({ status }: { status: string }) {
+  const variant = (VALID_STATUSES as readonly string[]).includes(status)
+    ? (status as (typeof VALID_STATUSES)[number])
+    : 'cancelled'
+
   return (
-    <span
-      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ${
-        STYLES[status] ?? 'bg-slate-100 text-slate-600'
-      }`}
-    >
+    <Badge variant={variant} className="capitalize">
       {status}
-    </span>
+    </Badge>
   )
 }

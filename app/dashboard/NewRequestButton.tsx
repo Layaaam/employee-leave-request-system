@@ -1,7 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import Modal from './Modal'
+import { IconPlus } from '@tabler/icons-react'
+import { Button } from '@/components/ui/button'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import RequestForm from './RequestForm'
 
 export default function NewRequestButton({
@@ -12,18 +14,16 @@ export default function NewRequestButton({
   const [open, setOpen] = useState(false)
 
   return (
-    <>
-      <button
-        onClick={() => setOpen(true)}
-        className="text-sm font-medium bg-slate-900 text-white rounded-md px-4 py-2 hover:bg-slate-800 whitespace-nowrap"
-      >
-        New request
-      </button>
-      {open && (
-        <Modal title="New leave request" onClose={() => setOpen(false)}>
-          <RequestForm leaveTypes={leaveTypes} onDone={() => setOpen(false)} />
-        </Modal>
-      )}
-    </>
+    <Dialog open={open} onOpenChange={setOpen}>
+      <Button onClick={() => setOpen(true)} className="whitespace-nowrap">
+        <IconPlus /> New request
+      </Button>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>New leave request</DialogTitle>
+        </DialogHeader>
+        <RequestForm leaveTypes={leaveTypes} onDone={() => setOpen(false)} />
+      </DialogContent>
+    </Dialog>
   )
 }

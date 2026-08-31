@@ -3,7 +3,10 @@ import { createClient } from '@/lib/supabase/server'
 import FilterBar from './FilterBar'
 import RequestTable from './RequestTable'
 import NewRequestButton from './NewRequestButton'
+import StatCards from './StatCards'
+import LeaveBalance from './LeaveBalance'
 import { signOut } from './actions'
+import { Button } from '@/components/ui/button'
 
 const PAGE_SIZE = 5
 
@@ -47,6 +50,8 @@ export default async function DashboardPage({
     .eq('id', user.id)
     .single()
 
+  // Now that /admin exists, keep admins on their own console instead of
+  // showing them the employee view (deferred here since Phase 3, per plan).
   if (profile?.role === 'admin') {
     redirect('/admin')
   }
@@ -54,6 +59,9 @@ export default async function DashboardPage({
   const page = Math.max(1, Number(sp.page) || 1)
   const from = (page - 1) * PAGE_SIZE
   const to = from + PAGE_SIZE - 1
+
+  // Server-side filtering, sorting, and pagination — never fetch-all-then-
+  // filter client-side (per the plan's performance guidance).
   let query = supabase
     .from('leave_requests')
     .select('*, leave_type:leave_types(id, name)', { count: 'exact' })
@@ -75,9 +83,45 @@ export default async function DashboardPage({
 
   const { data: leaveTypes } = await supabase
     .from('leave_types')
-    .select('id, name')
+    .select('id, name, default_days_allowed')
     .eq('is_active', true)
     .order('name')
+
+  // Lightweight count-only queries (head: true returns no rows, just a
+  // count) — cheaper than fetching full result sets just to count them.
+  const [{ count: pendingCount }, { count: approvedCount }, { count: rejectedCount }] =
+    await Promise.all([
+      supabase
+        .from('leave_requests')
+        .select('id', { count: 'exact', head: true })
+        .eq('employee_id', user.id)
+        .eq('status', 'pending'),
+      supabase
+        .from('leave_requests')
+        .select('id', { count: 'exact', head: true })
+        .eq('employee_id', user.id)
+        .eq('status', 'approved'),
+      supabase
+        .from('leave_requests')
+        .select('id', { count: 'exact', head: true })
+        .eq('employee_id', user.id)
+        .eq('status', 'rejected'),
+    ])
+
+  // Leave balance: sum of approved days this year, grouped by leave type.
+  const currentYear = new Date().getFullYear()
+  const { data: approvedThisYear } = await supabase
+    .from('leave_requests')
+    .select('leave_type_id, days_requested')
+    .eq('employee_id', user.id)
+    .eq('status', 'approved')
+    .gte('start_date', `${currentYear}-01-01`)
+    .lte('start_date', `${currentYear}-12-31`)
+
+  const usage = (approvedThisYear ?? []).reduce<Record<string, number>>((acc, r) => {
+    acc[r.leave_type_id] = (acc[r.leave_type_id] ?? 0) + r.days_requested
+    return acc
+  }, {})
 
   const totalPages = count ? Math.max(1, Math.ceil(count / PAGE_SIZE)) : 1
 
@@ -85,23 +129,24 @@ export default async function DashboardPage({
     <main className="flex-1 max-w-5xl w-full mx-auto p-6">
       <header className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-xl font-semibold text-slate-900">My Leave Requests</h1>
-          <p className="text-sm text-slate-500">
+          <h1 className="text-xl font-semibold text-foreground">My Leave Requests</h1>
+          <p className="text-sm text-muted-foreground">
             Signed in as {profile?.full_name ?? user.email}
             {profile?.role === 'admin' && (
-              <span className="ml-2 text-xs uppercase tracking-wide text-slate-400">Admin</span>
+              <span className="ml-2 text-xs uppercase tracking-wide text-muted-foreground">Admin</span>
             )}
           </p>
         </div>
         <form action={signOut}>
-          <button
-            type="submit"
-            className="text-sm font-medium text-slate-600 hover:text-slate-900 border border-slate-300 rounded-md px-3 py-1.5"
-          >
+          <Button type="submit" variant="outline">
             Sign out
-          </button>
+          </Button>
         </form>
       </header>
+
+      <StatCards pending={pendingCount ?? 0} approved={approvedCount ?? 0} rejected={rejectedCount ?? 0} />
+
+      <LeaveBalance leaveTypes={leaveTypes ?? []} usage={usage} />
 
       <div className="flex items-center justify-between gap-4 mb-4 flex-wrap">
         <FilterBar leaveTypes={leaveTypes ?? []} currentParams={sp} />
@@ -109,7 +154,7 @@ export default async function DashboardPage({
       </div>
 
       {error && (
-        <p role="alert" className="text-sm text-red-600 mb-4">
+        <p role="alert" className="text-sm text-destructive mb-4">
           Could not load requests: {error.message}
         </p>
       )}
@@ -117,18 +162,18 @@ export default async function DashboardPage({
       <RequestTable requests={requests ?? []} leaveTypes={leaveTypes ?? []} />
 
       {(count ?? 0) > 0 && (
-        <div className="flex items-center justify-between mt-4 text-sm text-slate-500">
+        <div className="flex items-center justify-between mt-4 text-sm text-muted-foreground">
           <span>
             Page {page} of {totalPages}
           </span>
           <div className="flex gap-4">
             {page > 1 && (
-              <a href={buildHref(sp, page - 1)} className="underline hover:text-slate-900">
+              <a href={buildHref(sp, page - 1)} className="underline hover:text-foreground">
                 Previous
               </a>
             )}
             {page < totalPages && (
-              <a href={buildHref(sp, page + 1)} className="underline hover:text-slate-900">
+              <a href={buildHref(sp, page + 1)} className="underline hover:text-foreground">
                 Next
               </a>
             )}
