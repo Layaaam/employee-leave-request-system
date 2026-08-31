@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { cn } from '@/lib/utils'
 
 const links = [
   { href: '/admin', label: 'Leave Requests' },
@@ -19,11 +20,12 @@ export default function AdminNav() {
           <Link
             key={l.href}
             href={l.href}
-            className={`py-2 border-b-2 ${
+            className={cn(
+              'py-2 border-b-2 transition-colors',
               active
-                ? 'border-slate-900 text-slate-900 font-medium'
-                : 'border-transparent text-slate-600 hover:text-slate-900 hover:border-slate-300'
-            }`}
+                ? 'border-primary text-primary font-medium'
+                : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
+            )}
           >
             {l.label}
           </Link>

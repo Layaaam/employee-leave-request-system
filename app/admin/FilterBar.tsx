@@ -2,8 +2,12 @@
 
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import { useState, type FormEvent } from 'react'
+import { Input } from '@/components/ui/input'
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
 
 type LeaveType = { id: string; name: string }
+
+const ALL = '__all__'
 
 export default function FilterBar({
   leaveTypes,
@@ -19,7 +23,7 @@ export default function FilterBar({
 
   function updateParam(key: string, value: string) {
     const params = new URLSearchParams(searchParams.toString())
-    if (value) {
+    if (value && value !== ALL) {
       params.set(key, value)
     } else {
       params.delete(key)
@@ -36,39 +40,44 @@ export default function FilterBar({
   return (
     <div className="flex flex-wrap items-center gap-2">
       <form onSubmit={handleSearchSubmit}>
-        <input
+        <Input
           type="search"
           placeholder="Search reason…"
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          className="rounded-md border border-slate-300 px-3 py-1.5 text-sm w-48 focus:outline-none focus:ring-2 focus:ring-slate-900"
+          className="w-48"
         />
       </form>
 
-      <select
-        value={currentParams.status ?? ''}
-        onChange={(e) => updateParam('status', e.target.value)}
-        className="rounded-md border border-slate-300 px-2 py-1.5 text-sm"
-      >
-        <option value="">All statuses</option>
-        <option value="pending">Pending</option>
-        <option value="approved">Approved</option>
-        <option value="rejected">Rejected</option>
-        <option value="cancelled">Cancelled</option>
-      </select>
+      <Select value={currentParams.status ?? ALL} onValueChange={(v) => updateParam('status', v)}>
+        <SelectTrigger className="w-40">
+          <SelectValue placeholder="All statuses" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value={ALL}>All statuses</SelectItem>
+          <SelectItem value="pending">Pending</SelectItem>
+          <SelectItem value="approved">Approved</SelectItem>
+          <SelectItem value="rejected">Rejected</SelectItem>
+          <SelectItem value="cancelled">Cancelled</SelectItem>
+        </SelectContent>
+      </Select>
 
-      <select
-        value={currentParams.leave_type_id ?? ''}
-        onChange={(e) => updateParam('leave_type_id', e.target.value)}
-        className="rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+      <Select
+        value={currentParams.leave_type_id ?? ALL}
+        onValueChange={(v) => updateParam('leave_type_id', v)}
       >
-        <option value="">All leave types</option>
-        {leaveTypes.map((lt) => (
-          <option key={lt.id} value={lt.id}>
-            {lt.name}
-          </option>
-        ))}
-      </select>
+        <SelectTrigger className="w-48">
+          <SelectValue placeholder="All leave types" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value={ALL}>All leave types</SelectItem>
+          {leaveTypes.map((lt) => (
+            <SelectItem key={lt.id} value={lt.id}>
+              {lt.name}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
     </div>
   )
 }

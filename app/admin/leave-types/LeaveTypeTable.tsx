@@ -1,7 +1,21 @@
 'use client'
 
 import { useState, useTransition } from 'react'
-import Modal from '@/app/dashboard/Modal'
+import { toast } from 'sonner'
+import { IconPencil, IconTrash } from '@tabler/icons-react'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogFooter,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogAction,
+  AlertDialogCancel,
+} from '@/components/ui/alert-dialog'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import LeaveTypeForm from './LeaveTypeForm'
 import { deleteLeaveType } from './actions'
 
@@ -15,26 +29,26 @@ type LeaveType = {
 
 export default function LeaveTypeTable({ leaveTypes }: { leaveTypes: LeaveType[] }) {
   const [editing, setEditing] = useState<LeaveType | null>(null)
-  const [deleteError, setDeleteError] = useState<string | null>(null)
-  const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState<LeaveType | null>(null)
   const [isPending, startTransition] = useTransition()
 
-  function handleDelete(id: string) {
-    if (!confirm('Delete this leave type? This only works if no requests use it.')) return
-    setDeleteError(null)
-    setDeletingId(id)
+  function handleDelete() {
+    if (!deleting) return
+    const id = deleting.id
     startTransition(async () => {
       const result = await deleteLeaveType(id)
       if (result?.error) {
-        setDeleteError(result.error)
+        toast.error('Could not delete leave type', { description: result.error })
+      } else {
+        toast.success('Leave type deleted')
       }
-      setDeletingId(null)
+      setDeleting(null)
     })
   }
 
   if (leaveTypes.length === 0) {
     return (
-      <div className="rounded-md border border-dashed border-slate-300 p-8 text-center text-sm text-slate-500">
+      <div className="rounded-md border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
         No leave types yet. Create one to get started.
       </div>
     )
@@ -42,51 +56,43 @@ export default function LeaveTypeTable({ leaveTypes }: { leaveTypes: LeaveType[]
 
   return (
     <>
-      {deleteError && (
-        <p role="alert" className="text-sm text-red-600 mb-3">
-          {deleteError}
-        </p>
-      )}
-      <div className="overflow-x-auto rounded-md border border-slate-200">
-        <table className="min-w-full divide-y divide-slate-200 text-sm">
-          <thead className="bg-slate-50">
+      <div className="overflow-x-auto rounded-md border border-border">
+        <table className="min-w-full divide-y divide-border text-sm">
+          <thead className="bg-muted">
             <tr>
-              <th className="px-4 py-2 text-left font-medium text-slate-600">Name</th>
-              <th className="px-4 py-2 text-left font-medium text-slate-600">Default days</th>
-              <th className="px-4 py-2 text-left font-medium text-slate-600">Status</th>
-              <th className="px-4 py-2 text-right font-medium text-slate-600">Actions</th>
+              <th className="px-4 py-2 text-left font-medium text-muted-foreground">Name</th>
+              <th className="px-4 py-2 text-left font-medium text-muted-foreground">Default days</th>
+              <th className="px-4 py-2 text-left font-medium text-muted-foreground">Status</th>
+              <th className="px-4 py-2 text-right font-medium text-muted-foreground">Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody className="divide-y divide-border">
             {leaveTypes.map((lt) => (
               <tr key={lt.id}>
-                <td className="px-4 py-2 text-slate-800">
+                <td className="px-4 py-2 text-foreground">
                   <div className="font-medium">{lt.name}</div>
                   {lt.description && (
-                    <div className="text-slate-500 text-xs mt-0.5 max-w-md">{lt.description}</div>
+                    <div className="text-muted-foreground text-xs mt-0.5 max-w-md">{lt.description}</div>
                   )}
                 </td>
-                <td className="px-4 py-2 text-slate-600">{lt.default_days_allowed ?? '—'}</td>
+                <td className="px-4 py-2 text-muted-foreground">{lt.default_days_allowed ?? '—'}</td>
                 <td className="px-4 py-2">
-                  <span
-                    className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                      lt.is_active ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-600'
-                    }`}
-                  >
+                  <Badge variant={lt.is_active ? 'approved' : 'cancelled'}>
                     {lt.is_active ? 'Active' : 'Inactive'}
-                  </span>
+                  </Badge>
                 </td>
-                <td className="px-4 py-2 text-right space-x-3 whitespace-nowrap">
-                  <button onClick={() => setEditing(lt)} className="text-slate-600 hover:text-slate-900 font-medium">
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => handleDelete(lt.id)}
-                    disabled={isPending && deletingId === lt.id}
-                    className="text-red-600 hover:text-red-800 font-medium disabled:opacity-50"
+                <td className="px-4 py-2 text-right space-x-1 whitespace-nowrap">
+                  <Button variant="ghost" size="sm" onClick={() => setEditing(lt)}>
+                    <IconPencil /> Edit
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-destructive hover:text-destructive"
+                    onClick={() => setDeleting(lt)}
                   >
-                    {isPending && deletingId === lt.id ? 'Deleting…' : 'Delete'}
-                  </button>
+                    <IconTrash /> Delete
+                  </Button>
                 </td>
               </tr>
             ))}
@@ -94,11 +100,32 @@ export default function LeaveTypeTable({ leaveTypes }: { leaveTypes: LeaveType[]
         </table>
       </div>
 
-      {editing && (
-        <Modal title="Edit leave type" onClose={() => setEditing(null)}>
-          <LeaveTypeForm existing={editing} onDone={() => setEditing(null)} />
-        </Modal>
-      )}
+      <Dialog open={!!editing} onOpenChange={(open) => !open && setEditing(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit leave type</DialogTitle>
+          </DialogHeader>
+          {editing && <LeaveTypeForm existing={editing} onDone={() => setEditing(null)} />}
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={!!deleting} onOpenChange={(open) => !open && setDeleting(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this leave type?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This only works if no requests currently use it. If it&apos;s in use, deactivate it
+              instead.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} disabled={isPending}>
+              {isPending ? 'Deleting…' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   )
 }

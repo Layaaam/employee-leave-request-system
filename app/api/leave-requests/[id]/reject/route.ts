@@ -14,7 +14,7 @@ export async function POST(
   } = await supabase.auth.getUser()
 
   if (!user) {
-    return NextResponse.redirect(new URL('/login', request.url), 303)
+    return NextResponse.json({ error: 'Not authenticated' }, { status: 401 })
   }
 
   const { data: profile } = await supabase
@@ -27,8 +27,13 @@ export async function POST(
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
-  const formData = await request.formData()
-  const review_comment = (formData.get('review_comment') as string) || null
+  let review_comment: string | null = null
+  try {
+    const body = await request.json()
+    review_comment = body?.review_comment || null
+  } catch {
+    review_comment = null
+  }
 
   const service = createServiceClient()
   const { error } = await service
@@ -45,5 +50,5 @@ export async function POST(
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
-  return NextResponse.redirect(new URL('/admin', request.url), 303)
+  return NextResponse.json({ success: true })
 }
