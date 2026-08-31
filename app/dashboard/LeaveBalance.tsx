@@ -8,8 +8,6 @@ export default function LeaveBalance({
   leaveTypes: LeaveType[]
   usage: Usage
 }) {
-  // Only leave types with a defined cap make sense to show a balance for —
-  // Unpaid Leave (default_days_allowed = null) has no "balance" concept.
   const withLimits = leaveTypes.filter((lt) => lt.default_days_allowed !== null)
   if (withLimits.length === 0) return null
 

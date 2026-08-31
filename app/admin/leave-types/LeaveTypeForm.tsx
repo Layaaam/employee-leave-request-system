@@ -15,6 +15,8 @@ type ExistingLeaveType = {
   description: string | null
   default_days_allowed: number | null
   is_active: boolean
+  notice_period_days: number | null
+  requires_documentation: boolean
 }
 
 export default function LeaveTypeForm({
@@ -26,6 +28,7 @@ export default function LeaveTypeForm({
 }) {
   const [error, setError] = useState<string | null>(null)
   const [isActive, setIsActive] = useState(existing?.is_active ?? true)
+  const [requiresDocs, setRequiresDocs] = useState(existing?.requires_documentation ?? false)
   const [isPending, startTransition] = useTransition()
 
   function handleSubmit(formData: FormData) {
@@ -57,18 +60,35 @@ export default function LeaveTypeForm({
         <Textarea id="description" name="description" rows={2} defaultValue={existing?.description ?? ''} />
       </div>
 
-      <div className="space-y-1.5">
-        <Label htmlFor="default_days_allowed">
-          Default days allowed (leave blank if not applicable, e.g. unpaid leave)
-        </Label>
-        <Input
-          id="default_days_allowed"
-          name="default_days_allowed"
-          type="number"
-          min={0}
-          defaultValue={existing?.default_days_allowed ?? ''}
-        />
+      <div className="grid grid-cols-2 gap-3">
+        <div className="space-y-1.5">
+          <Label htmlFor="default_days_allowed">Default days allowed</Label>
+          <Input
+            id="default_days_allowed"
+            name="default_days_allowed"
+            type="number"
+            min={0}
+            defaultValue={existing?.default_days_allowed ?? ''}
+            placeholder="Blank if N/A"
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="notice_period_days">Notice period (days)</Label>
+          <Input
+            id="notice_period_days"
+            name="notice_period_days"
+            type="number"
+            min={0}
+            defaultValue={existing?.notice_period_days ?? ''}
+            placeholder="Blank = no notice needed"
+          />
+        </div>
       </div>
+      <p className="text-xs text-muted-foreground -mt-2">
+        Leave blank for leave types that can be filed after the fact (e.g. Sick Leave). Set a number
+        of days for advance-notice types — employees won&apos;t be able to select a start date within
+        that window.
+      </p>
 
       <div className="flex items-center gap-2">
         <Checkbox
@@ -79,6 +99,18 @@ export default function LeaveTypeForm({
         {isActive && <input type="hidden" name="is_active" value="on" />}
         <Label htmlFor="is_active" className="cursor-pointer">
           Active (visible to employees)
+        </Label>
+      </div>
+
+      <div className="flex items-center gap-2">
+        <Checkbox
+          id="requires_documentation"
+          checked={requiresDocs}
+          onCheckedChange={(checked) => setRequiresDocs(checked === true)}
+        />
+        {requiresDocs && <input type="hidden" name="requires_documentation" value="on" />}
+        <Label htmlFor="requires_documentation" className="cursor-pointer">
+          Requires supporting documentation
         </Label>
       </div>
 

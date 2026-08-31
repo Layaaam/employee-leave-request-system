@@ -2,6 +2,8 @@ import { createClient } from '@/lib/supabase/server'
 import FilterBar from './FilterBar'
 import AdminRequestTable from './AdminRequestTable'
 import StatCards from '@/app/dashboard/StatCards'
+import ExportCsvButton from './ExportCsvButton'
+import RealtimeRequestListener from './RealtimeRequestListener'
 
 const PAGE_SIZE = 10
 
@@ -35,15 +37,6 @@ export default async function AdminRequestsPage({
   const from = (page - 1) * PAGE_SIZE
   const to = from + PAGE_SIZE - 1
 
-  // Both employee_id and reviewed_by reference profiles, so each embed
-  // needs its FK explicitly named to disambiguate — avoids a second
-  // round trip per row (no N+1) while resolving the ambiguity.
-  //
-  // Primary sort is by `status`, not `created_at` — Postgres orders enum
-  // values by their declaration order in the CREATE TYPE statement
-  // (Phase 1: 'pending', 'approved', 'rejected', 'cancelled'), so this
-  // surfaces actionable pending requests first with zero extra complexity
-  // or schema change. created_at is the tiebreaker within each status.
   let query = supabase
     .from('leave_requests')
     .select(
@@ -82,11 +75,15 @@ export default async function AdminRequestsPage({
 
   return (
     <div>
+      <RealtimeRequestListener />
       <StatCards pending={pendingCount ?? 0} approved={approvedCount ?? 0} rejected={rejectedCount ?? 0} />
 
       <div className="flex items-center justify-between gap-4 mb-4 flex-wrap">
         <h2 className="text-lg font-semibold text-foreground">All Leave Requests</h2>
-        <FilterBar leaveTypes={leaveTypes ?? []} currentParams={sp} />
+        <div className="flex items-center gap-2 flex-wrap">
+          <FilterBar leaveTypes={leaveTypes ?? []} currentParams={sp} />
+          <ExportCsvButton />
+        </div>
       </div>
 
       {error && (

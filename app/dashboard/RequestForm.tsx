@@ -7,9 +7,15 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
 
-type LeaveType = { id: string; name: string }
+type LeaveType = {
+  id: string
+  name: string
+  notice_period_days: number | null
+  requires_documentation: boolean
+}
 
 type ExistingRequest = {
   id: string
@@ -20,21 +26,36 @@ type ExistingRequest = {
   reason: string | null
 }
 
-const RETROACTIVE_ALLOWED = ['Sick Leave', 'Emergency/Bereavement Leave']
-
 function todayStr(): string {
   const d = new Date()
-  const yyyy = d.getFullYear()
-  const mm = String(d.getMonth() + 1).padStart(2, '0')
-  const dd = String(d.getDate()).padStart(2, '0')
-  return `${yyyy}-${mm}-${dd}`
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
-function inclusiveDayCount(start: string, end: string): number | null {
+function addDays(dateStr: string, days: number): string {
+  const d = new Date(dateStr + 'T00:00:00Z')
+  d.setUTCDate(d.getUTCDate() + days)
+  return d.toISOString().slice(0, 10)
+}
+
+function inclusiveDayCount(start: string, end: string, excludeWeekends: boolean): number | null {
   if (!start || !end) return null
-  const diffMs = new Date(end).getTime() - new Date(start).getTime()
+  const startDate = new Date(start)
+  const endDate = new Date(end)
+  const diffMs = endDate.getTime() - startDate.getTime()
   if (Number.isNaN(diffMs) || diffMs < 0) return null
-  return Math.round(diffMs / 86_400_000) + 1
+
+  if (!excludeWeekends) {
+    return Math.round(diffMs / 86_400_000) + 1
+  }
+
+  let count = 0
+  const cursor = new Date(startDate)
+  while (cursor.getTime() <= endDate.getTime()) {
+    const day = cursor.getUTCDay()
+    if (day !== 0 && day !== 6) count++
+    cursor.setUTCDate(cursor.getUTCDate() + 1)
+  }
+  return count
 }
 
 export default function RequestForm({
@@ -51,21 +72,21 @@ export default function RequestForm({
   const [startDate, setStartDate] = useState(existing?.start_date ?? '')
   const [endDate, setEndDate] = useState(existing?.end_date ?? '')
   const [daysRequested, setDaysRequested] = useState<number | ''>(existing?.days_requested ?? '')
+  const [excludeWeekends, setExcludeWeekends] = useState(false)
   const [isPending, startTransition] = useTransition()
 
-  const selectedLeaveTypeName = useMemo(
-    () => leaveTypes.find((lt) => lt.id === leaveTypeId)?.name,
+  const selectedLeaveType = useMemo(
+    () => leaveTypes.find((lt) => lt.id === leaveTypeId),
     [leaveTypes, leaveTypeId]
   )
-  const allowsPastDates = selectedLeaveTypeName
-    ? RETROACTIVE_ALLOWED.includes(selectedLeaveTypeName)
-    : false
-  const minStartDate = allowsPastDates ? undefined : todayStr()
 
-  function handleDateChange(nextStart: string, nextEnd: string) {
+  const noticeDays = selectedLeaveType?.notice_period_days ?? 0
+  const minStartDate = noticeDays > 0 ? addDays(todayStr(), noticeDays) : undefined
+
+  function handleDateChange(nextStart: string, nextEnd: string, weekendsOverride?: boolean) {
     setStartDate(nextStart)
     setEndDate(nextEnd)
-    const computed = inclusiveDayCount(nextStart, nextEnd)
+    const computed = inclusiveDayCount(nextStart, nextEnd, weekendsOverride ?? excludeWeekends)
     if (computed !== null) {
       setDaysRequested(computed)
     }
@@ -134,13 +155,30 @@ export default function RequestForm({
         </div>
       </div>
 
-      {selectedLeaveTypeName && (
+      {selectedLeaveType && (
         <p className="text-xs text-muted-foreground -mt-2">
-          {allowsPastDates
-            ? `${selectedLeaveTypeName} can be filed for dates already passed, consistent with common practice for urgent leave.`
-            : `${selectedLeaveTypeName} requires advance notice, so past dates aren't selectable.`}
+          {noticeDays > 0
+            ? `${selectedLeaveType.name} requires ${noticeDays} day${noticeDays === 1 ? '' : 's'} advance notice.`
+            : `${selectedLeaveType.name} can be filed for dates already passed, consistent with common practice for urgent leave.`}
+          {selectedLeaveType.requires_documentation &&
+            ' Supporting documentation will need to be submitted separately.'}
         </p>
       )}
+
+      <div className="flex items-center gap-2">
+        <Checkbox
+          id="exclude_weekends"
+          checked={excludeWeekends}
+          onCheckedChange={(checked) => {
+            const next = checked === true
+            setExcludeWeekends(next)
+            handleDateChange(startDate, endDate, next)
+          }}
+        />
+        <Label htmlFor="exclude_weekends" className="cursor-pointer text-sm">
+          Exclude weekends from day count
+        </Label>
+      </div>
 
       <div className="space-y-1.5">
         <Label htmlFor="days_requested">Days requested</Label>
@@ -154,7 +192,7 @@ export default function RequestForm({
           onChange={(e) => setDaysRequested(e.target.value === '' ? '' : Number(e.target.value))}
         />
         <p className="text-xs text-muted-foreground">
-          Auto-calculated from the selected dates (inclusive). Adjust manually if needed, e.g. for a half-day.
+          Auto-calculated from the selected dates. Adjust manually if needed, e.g. for a half-day.
         </p>
       </div>
 

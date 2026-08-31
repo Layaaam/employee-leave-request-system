@@ -9,6 +9,7 @@ import { deleteLeaveRequest } from './actions'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { formatDate } from '@/lib/utils'
+import EventTimeline from './EventTimeline'
 import {
   AlertDialog,
   AlertDialogContent,
@@ -39,7 +40,7 @@ export default function RequestTable({
   leaveTypes,
 }: {
   requests: LeaveRequest[]
-  leaveTypes: { id: string; name: string }[]
+  leaveTypes: { id: string; name: string; notice_period_days: number | null; requires_documentation: boolean }[]
 }) {
   const [viewing, setViewing] = useState<LeaveRequest | null>(null)
   const [editing, setEditing] = useState<LeaveRequest | null>(null)
@@ -187,6 +188,7 @@ export default function RequestTable({
               )}
             </dl>
           )}
+          {viewing && <EventTimeline leaveRequestId={viewing.id} />}
         </DialogContent>
       </Dialog>
 

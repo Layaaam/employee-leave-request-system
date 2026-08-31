@@ -50,8 +50,6 @@ export default async function DashboardPage({
     .eq('id', user.id)
     .single()
 
-  // Now that /admin exists, keep admins on their own console instead of
-  // showing them the employee view (deferred here since Phase 3, per plan).
   if (profile?.role === 'admin') {
     redirect('/admin')
   }
@@ -60,8 +58,6 @@ export default async function DashboardPage({
   const from = (page - 1) * PAGE_SIZE
   const to = from + PAGE_SIZE - 1
 
-  // Server-side filtering, sorting, and pagination — never fetch-all-then-
-  // filter client-side (per the plan's performance guidance).
   let query = supabase
     .from('leave_requests')
     .select('*, leave_type:leave_types(id, name)', { count: 'exact' })
@@ -83,12 +79,10 @@ export default async function DashboardPage({
 
   const { data: leaveTypes } = await supabase
     .from('leave_types')
-    .select('id, name, default_days_allowed')
+    .select('id, name, default_days_allowed, notice_period_days, requires_documentation')
     .eq('is_active', true)
     .order('name')
 
-  // Lightweight count-only queries (head: true returns no rows, just a
-  // count) — cheaper than fetching full result sets just to count them.
   const [{ count: pendingCount }, { count: approvedCount }, { count: rejectedCount }] =
     await Promise.all([
       supabase
@@ -108,7 +102,6 @@ export default async function DashboardPage({
         .eq('status', 'rejected'),
     ])
 
-  // Leave balance: sum of approved days this year, grouped by leave type.
   const currentYear = new Date().getFullYear()
   const { data: approvedThisYear } = await supabase
     .from('leave_requests')

@@ -6,9 +6,12 @@ import { toast } from 'sonner'
 import { IconEye, IconCheck, IconX } from '@tabler/icons-react'
 import StatusBadge from '@/app/dashboard/StatusBadge'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { formatDate } from '@/lib/utils'
+import EventTimeline from '@/app/dashboard/EventTimeline'
 import RejectModal from './RejectModal'
+import BulkRejectModal from './BulkRejectModal'
 
 type Person = { id: string; full_name: string } | null
 
@@ -31,8 +34,31 @@ export default function AdminRequestTable({ requests }: { requests: AdminLeaveRe
   const router = useRouter()
   const [viewing, setViewing] = useState<AdminLeaveRequest | null>(null)
   const [rejecting, setRejecting] = useState<AdminLeaveRequest | null>(null)
+  const [bulkRejecting, setBulkRejecting] = useState(false)
   const [approvingId, setApprovingId] = useState<string | null>(null)
   const [isApproving, startApproving] = useTransition()
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [isBulkApproving, startBulkApproving] = useTransition()
+
+  const pendingRequests = requests.filter((r) => r.status === 'pending')
+  const allPendingSelected =
+    pendingRequests.length > 0 && pendingRequests.every((r) => selected.has(r.id))
+
+  function toggleOne(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  function toggleAllPending() {
+    setSelected(() => {
+      if (allPendingSelected) return new Set()
+      return new Set(pendingRequests.map((r) => r.id))
+    })
+  }
 
   function handleApprove(id: string) {
     setApprovingId(id)
@@ -51,6 +77,25 @@ export default function AdminRequestTable({ requests }: { requests: AdminLeaveRe
       } finally {
         setApprovingId(null)
       }
+    })
+  }
+
+  function handleBulkApprove() {
+    const ids = Array.from(selected)
+    startBulkApproving(async () => {
+      const results = await Promise.allSettled(
+        ids.map((id) =>
+          fetch(`/api/leave-requests/${id}/approve`, { method: 'POST' }).then((res) => {
+            if (!res.ok) throw new Error('failed')
+          })
+        )
+      )
+      const failed = results.filter((r) => r.status === 'rejected').length
+      const succeeded = ids.length - failed
+      if (succeeded > 0) toast.success(`${succeeded} request${succeeded === 1 ? '' : 's'} approved`)
+      if (failed > 0) toast.error(`${failed} request${failed === 1 ? '' : 's'} could not be approved`)
+      setSelected(new Set())
+      router.refresh()
     })
   }
 
@@ -89,7 +134,29 @@ export default function AdminRequestTable({ requests }: { requests: AdminLeaveRe
 
   return (
     <>
-      {/* Mobile: stacked cards */}
+      {selected.size > 0 && (
+        <div className="flex items-center justify-between gap-3 mb-3 rounded-md border border-primary/30 bg-accent px-4 py-2">
+          <p className="text-sm text-foreground">{selected.size} selected</p>
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              className="bg-emerald-600 text-white hover:bg-emerald-700"
+              onClick={handleBulkApprove}
+              disabled={isBulkApproving}
+            >
+              <IconCheck /> {isBulkApproving ? 'Approving…' : `Approve ${selected.size}`}
+            </Button>
+            <Button variant="destructive" size="sm" onClick={() => setBulkRejecting(true)}>
+              <IconX /> Reject {selected.size}
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => setSelected(new Set())}>
+              Clear
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Mobile: stacked cards (no bulk-select on mobile, kept simple) */}
       <div className="md:hidden space-y-3">
         {requests.map((r) => (
           <div key={r.id} className="rounded-md border border-border bg-card p-4">
@@ -113,6 +180,15 @@ export default function AdminRequestTable({ requests }: { requests: AdminLeaveRe
         <table className="min-w-full divide-y divide-border text-sm">
           <thead className="bg-muted">
             <tr>
+              <th className="w-10 px-4 py-2">
+                {pendingRequests.length > 0 && (
+                  <Checkbox
+                    checked={allPendingSelected}
+                    onCheckedChange={toggleAllPending}
+                    aria-label="Select all pending"
+                  />
+                )}
+              </th>
               <th className="px-4 py-2 text-left font-medium text-muted-foreground">Employee</th>
               <th className="px-4 py-2 text-left font-medium text-muted-foreground">Leave type</th>
               <th className="px-4 py-2 text-left font-medium text-muted-foreground">Dates</th>
@@ -124,10 +200,19 @@ export default function AdminRequestTable({ requests }: { requests: AdminLeaveRe
           <tbody className="divide-y divide-border">
             {requests.map((r) => (
               <tr key={r.id}>
+                <td className="px-4 py-2">
+                  {r.status === 'pending' && (
+                    <Checkbox
+                      checked={selected.has(r.id)}
+                      onCheckedChange={() => toggleOne(r.id)}
+                      aria-label={`Select request from ${r.employee?.full_name ?? 'employee'}`}
+                    />
+                  )}
+                </td>
                 <td className="px-4 py-2 text-foreground">{r.employee?.full_name ?? '—'}</td>
                 <td className="px-4 py-2 text-foreground">{r.leave_type?.name ?? '—'}</td>
                 <td className="px-4 py-2 text-muted-foreground whitespace-nowrap">
-                  {r.start_date} → {r.end_date}
+                  {formatDate(r.start_date)} → {formatDate(r.end_date)}
                 </td>
                 <td className="px-4 py-2 text-muted-foreground">{r.days_requested}</td>
                 <td className="px-4 py-2">
@@ -186,7 +271,7 @@ export default function AdminRequestTable({ requests }: { requests: AdminLeaveRe
               {viewing.reviewed_at && (
                 <div className="flex justify-between">
                   <dt className="text-muted-foreground">Reviewed at</dt>
-                  <dd className="text-foreground">{new Date(viewing.reviewed_at).toLocaleString()}</dd>
+                  <dd className="text-foreground">{formatDate(new Date(viewing.reviewed_at).toLocaleString())}</dd>
                 </div>
               )}
               {viewing.review_comment && (
@@ -197,10 +282,20 @@ export default function AdminRequestTable({ requests }: { requests: AdminLeaveRe
               )}
             </dl>
           )}
+          {viewing && <EventTimeline leaveRequestId={viewing.id} />}
         </DialogContent>
       </Dialog>
 
       {rejecting && <RejectModal request={rejecting} onClose={() => setRejecting(null)} />}
+      {bulkRejecting && (
+        <BulkRejectModal
+          ids={Array.from(selected)}
+          onClose={() => {
+            setBulkRejecting(false)
+            setSelected(new Set())
+          }}
+        />
+      )}
     </>
   )
 }

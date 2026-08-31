@@ -9,7 +9,7 @@ import RequestForm from './RequestForm'
 export default function NewRequestButton({
   leaveTypes,
 }: {
-  leaveTypes: { id: string; name: string }[]
+  leaveTypes: { id: string; name: string; notice_period_days: number | null; requires_documentation: boolean }[]
 }) {
   const [open, setOpen] = useState(false)
 

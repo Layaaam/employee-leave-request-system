@@ -11,12 +11,17 @@ export async function createLeaveType(formData: FormData) {
   const rawDays = formData.get('default_days_allowed') as string
   const default_days_allowed = rawDays ? Number(rawDays) : null
   const is_active = formData.get('is_active') === 'on'
+  const rawNotice = formData.get('notice_period_days') as string
+  const notice_period_days = rawNotice ? Number(rawNotice) : null
+  const requires_documentation = formData.get('requires_documentation') === 'on'
 
   const { error } = await supabase.from('leave_types').insert({
     name,
     description,
     default_days_allowed,
     is_active,
+    notice_period_days,
+    requires_documentation,
   })
 
   if (error) {
@@ -24,6 +29,7 @@ export async function createLeaveType(formData: FormData) {
   }
 
   revalidatePath('/admin/leave-types')
+  revalidatePath('/dashboard')
   return { error: null }
 }
 
@@ -35,10 +41,20 @@ export async function updateLeaveType(id: string, formData: FormData) {
   const rawDays = formData.get('default_days_allowed') as string
   const default_days_allowed = rawDays ? Number(rawDays) : null
   const is_active = formData.get('is_active') === 'on'
+  const rawNotice = formData.get('notice_period_days') as string
+  const notice_period_days = rawNotice ? Number(rawNotice) : null
+  const requires_documentation = formData.get('requires_documentation') === 'on'
 
   const { error } = await supabase
     .from('leave_types')
-    .update({ name, description, default_days_allowed, is_active })
+    .update({
+      name,
+      description,
+      default_days_allowed,
+      is_active,
+      notice_period_days,
+      requires_documentation,
+    })
     .eq('id', id)
 
   if (error) {
@@ -46,6 +62,7 @@ export async function updateLeaveType(id: string, formData: FormData) {
   }
 
   revalidatePath('/admin/leave-types')
+  revalidatePath('/dashboard')
   return { error: null }
 }
 
@@ -65,5 +82,6 @@ export async function deleteLeaveType(id: string) {
   }
 
   revalidatePath('/admin/leave-types')
+  revalidatePath('/dashboard')
   return { error: null }
 }
