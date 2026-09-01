@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
+import DatePicker from './DatePicker'
 
 type LeaveType = {
   id: string
@@ -73,6 +74,12 @@ export default function RequestForm({
   const [endDate, setEndDate] = useState(existing?.end_date ?? '')
   const [daysRequested, setDaysRequested] = useState<number | ''>(existing?.days_requested ?? '')
   const [excludeWeekends, setExcludeWeekends] = useState(false)
+  // Tracks whether the user has manually typed into the days field — once
+  // true, date changes stop silently overwriting their entry. This is the
+  // fix for "cannot be adjusted manually since the basis is still the
+  // start/end date": previously every date change recalculated and
+  // clobbered any manual edit unconditionally.
+  const [daysManuallyEdited, setDaysManuallyEdited] = useState(false)
   const [isPending, startTransition] = useTransition()
 
   const selectedLeaveType = useMemo(
@@ -83,13 +90,33 @@ export default function RequestForm({
   const noticeDays = selectedLeaveType?.notice_period_days ?? 0
   const minStartDate = noticeDays > 0 ? addDays(todayStr(), noticeDays) : undefined
 
-  function handleDateChange(nextStart: string, nextEnd: string, weekendsOverride?: boolean) {
-    setStartDate(nextStart)
-    setEndDate(nextEnd)
-    const computed = inclusiveDayCount(nextStart, nextEnd, weekendsOverride ?? excludeWeekends)
-    if (computed !== null) {
-      setDaysRequested(computed)
-    }
+  function recalcDays(start: string, end: string, weekends: boolean) {
+    const computed = inclusiveDayCount(start, end, weekends)
+    if (computed !== null) setDaysRequested(computed)
+  }
+
+  function handleStartChange(next: string) {
+    setStartDate(next)
+    if (!daysManuallyEdited) recalcDays(next, endDate, excludeWeekends)
+  }
+
+  function handleEndChange(next: string) {
+    setEndDate(next)
+    if (!daysManuallyEdited) recalcDays(startDate, next, excludeWeekends)
+  }
+
+  function handleWeekendToggle(checked: boolean) {
+    setExcludeWeekends(checked)
+    // An explicit toggle of the calculation basis is a deliberate request
+    // to recompute — always honor it, even if the user had previously
+    // edited the days field by hand.
+    setDaysManuallyEdited(false)
+    recalcDays(startDate, endDate, checked)
+  }
+
+  function handleRecalculate() {
+    setDaysManuallyEdited(false)
+    recalcDays(startDate, endDate, excludeWeekends)
   }
 
   function handleSubmit(formData: FormData) {
@@ -131,27 +158,13 @@ export default function RequestForm({
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1.5">
           <Label htmlFor="start_date">Start date</Label>
-          <Input
-            id="start_date"
-            name="start_date"
-            type="date"
-            required
-            min={minStartDate}
-            value={startDate}
-            onChange={(e) => handleDateChange(e.target.value, endDate)}
-          />
+          <DatePicker value={startDate} onChange={handleStartChange} min={minStartDate} />
+          <input type="hidden" name="start_date" value={startDate} required />
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="end_date">End date</Label>
-          <Input
-            id="end_date"
-            name="end_date"
-            type="date"
-            required
-            min={startDate || minStartDate}
-            value={endDate}
-            onChange={(e) => handleDateChange(startDate, e.target.value)}
-          />
+          <DatePicker value={endDate} onChange={handleEndChange} min={startDate || minStartDate} />
+          <input type="hidden" name="end_date" value={endDate} required />
         </div>
       </div>
 
@@ -169,11 +182,7 @@ export default function RequestForm({
         <Checkbox
           id="exclude_weekends"
           checked={excludeWeekends}
-          onCheckedChange={(checked) => {
-            const next = checked === true
-            setExcludeWeekends(next)
-            handleDateChange(startDate, endDate, next)
-          }}
+          onCheckedChange={(checked) => handleWeekendToggle(checked === true)}
         />
         <Label htmlFor="exclude_weekends" className="cursor-pointer text-sm">
           Exclude weekends from day count
@@ -181,7 +190,18 @@ export default function RequestForm({
       </div>
 
       <div className="space-y-1.5">
-        <Label htmlFor="days_requested">Days requested</Label>
+        <div className="flex items-center justify-between">
+          <Label htmlFor="days_requested">Days requested</Label>
+          {daysManuallyEdited && (
+            <button
+              type="button"
+              onClick={handleRecalculate}
+              className="text-xs text-primary underline underline-offset-2"
+            >
+              Recalculate from dates
+            </button>
+          )}
+        </div>
         <Input
           id="days_requested"
           name="days_requested"
@@ -189,10 +209,15 @@ export default function RequestForm({
           min={1}
           required
           value={daysRequested}
-          onChange={(e) => setDaysRequested(e.target.value === '' ? '' : Number(e.target.value))}
+          onChange={(e) => {
+            setDaysManuallyEdited(true)
+            setDaysRequested(e.target.value === '' ? '' : Number(e.target.value))
+          }}
         />
         <p className="text-xs text-muted-foreground">
-          Auto-calculated from the selected dates. Adjust manually if needed, e.g. for a half-day.
+          {daysManuallyEdited
+            ? 'Manually set — changing the dates will no longer overwrite this.'
+            : 'Auto-calculated from the selected dates. Type a new value to override.'}
         </p>
       </div>
 

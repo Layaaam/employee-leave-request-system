@@ -1,7 +1,8 @@
 'use client'
 
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
-import { useState, type FormEvent } from 'react'
+import { useState, useTransition, type FormEvent } from 'react'
+import { IconLoader2 } from '@tabler/icons-react'
 import { Input } from '@/components/ui/input'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
 
@@ -20,6 +21,7 @@ export default function FilterBar({
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const [q, setQ] = useState(currentParams.q ?? '')
+  const [isPending, startTransition] = useTransition()
 
   function updateParam(key: string, value: string) {
     const params = new URLSearchParams(searchParams.toString())
@@ -29,7 +31,9 @@ export default function FilterBar({
       params.delete(key)
     }
     params.delete('page')
-    router.push(`${pathname}?${params.toString()}`)
+    startTransition(() => {
+      router.push(`${pathname}?${params.toString()}`)
+    })
   }
 
   function handleSearchSubmit(e: FormEvent) {
@@ -38,7 +42,10 @@ export default function FilterBar({
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div
+      className={`flex flex-wrap items-center gap-2 transition-opacity ${isPending ? 'opacity-60' : ''}`}
+      aria-busy={isPending}
+    >
       <form onSubmit={handleSearchSubmit}>
         <Input
           type="search"
@@ -78,6 +85,8 @@ export default function FilterBar({
           ))}
         </SelectContent>
       </Select>
+
+      {isPending && <IconLoader2 className="animate-spin text-muted-foreground" />}
     </div>
   )
 }

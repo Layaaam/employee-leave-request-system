@@ -4,8 +4,8 @@
 :root {
   --radius: 0.75rem;
 
-  --background: #f5f3ff; 
-  --foreground: #1e1b2e;
+  --background: #f7f5ff; 
+  --foreground: #211c32;
 
   --card: #ffffff;
   --card-foreground: #1e1b2e;
@@ -13,24 +13,24 @@
   --popover: #ffffff;
   --popover-foreground: #1e1b2e;
 
-  --primary: #7c3aed;   
+  --primary: #8b5cf6;   
   --primary-foreground: #ffffff;
 
-  --secondary: #ec4899; 
+  --secondary: #e879b9; 
   --secondary-foreground: #ffffff;
 
-  --muted: #ede9fe;     
+  --muted: #f0ecff;     
   --muted-foreground: #6b7280;
 
-  --accent: #f3e8ff;          
-  --accent-foreground: #4c1d95;
+  --accent: #f8e9f7;          
+  --accent-foreground: #5b2379;
 
   --destructive: #dc2626;     
   --destructive-foreground: #ffffff;
 
-  --border: #e4dffb;
-  --input: #e4dffb;
-  --ring: #7c3aed;
+  --border: #e8e1fb;
+  --input: #e8e1fb;
+  --ring: #8b5cf6;
 }
 
 @theme inline {
@@ -71,5 +71,17 @@
 }
 
 .gradient-primary {
-  background: linear-gradient(135deg, #7c3aed, #ec4899);
+  background: linear-gradient(135deg, #8b5cf6, #e879b9);
+}
+
+.page-gradient-soft {
+  background: linear-gradient(135deg, #f7f5ff 0%, #fdf2f8 100%);
+}
+
+.gradient-card-purple {
+  background: linear-gradient(135deg, #8b5cf6, #b8a2ec);
+}
+
+.gradient-card-pink {
+  background: linear-gradient(135deg, #e879b9, #f4b8d8);
 }

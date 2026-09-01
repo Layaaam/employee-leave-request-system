@@ -5,11 +5,11 @@ import { toast } from 'sonner'
 import { IconEye, IconPencil, IconTrash } from '@tabler/icons-react'
 import StatusBadge from './StatusBadge'
 import RequestForm from './RequestForm'
+import RequestDetailContent from './RequestDetailContent'
 import { deleteLeaveRequest } from './actions'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { formatDate } from '@/lib/utils'
-import EventTimeline from './EventTimeline'
+import { formatDateShort } from '@/lib/utils'
 import {
   AlertDialog,
   AlertDialogContent,
@@ -20,6 +20,13 @@ import {
   AlertDialogAction,
   AlertDialogCancel,
 } from '@/components/ui/alert-dialog'
+
+type LeaveType = {
+  id: string
+  name: string
+  notice_period_days: number | null
+  requires_documentation: boolean
+}
 
 type LeaveRequest = {
   id: string
@@ -40,7 +47,7 @@ export default function RequestTable({
   leaveTypes,
 }: {
   requests: LeaveRequest[]
-  leaveTypes: { id: string; name: string; notice_period_days: number | null; requires_documentation: boolean }[]
+  leaveTypes: LeaveType[]
 }) {
   const [viewing, setViewing] = useState<LeaveRequest | null>(null)
   const [editing, setEditing] = useState<LeaveRequest | null>(null)
@@ -104,7 +111,7 @@ export default function RequestTable({
               <StatusBadge status={r.status} />
             </div>
             <p className="text-sm text-muted-foreground">
-              {r.start_date} → {r.end_date} · {r.days_requested} days
+              {formatDateShort(r.start_date)} → {formatDateShort(r.end_date)} · {r.days_requested} days
             </p>
             <div className="flex flex-wrap gap-2 mt-3">{actionButtons(r)}</div>
           </div>
@@ -128,7 +135,7 @@ export default function RequestTable({
               <tr key={r.id}>
                 <td className="px-4 py-2 text-foreground">{r.leave_type?.name ?? '—'}</td>
                 <td className="px-4 py-2 text-muted-foreground whitespace-nowrap">
-                  {r.start_date} → {r.end_date}
+                  {formatDateShort(r.start_date)} → {formatDateShort(r.end_date)}
                 </td>
                 <td className="px-4 py-2 text-muted-foreground">{r.days_requested}</td>
                 <td className="px-4 py-2">
@@ -147,48 +154,20 @@ export default function RequestTable({
             <DialogTitle>Leave request details</DialogTitle>
           </DialogHeader>
           {viewing && (
-            <dl className="space-y-3 text-sm">
-              <div className="flex justify-between">
-                <dt className="text-muted-foreground">Leave type</dt>
-                <dd className="text-foreground font-medium">{viewing.leave_type?.name ?? '—'}</dd>
-              </div>
-              <div className="flex justify-between">
-                <dt className="text-muted-foreground">Dates</dt>
-                <dd className="text-foreground">
-                  {formatDate(viewing.start_date)} → {formatDate(viewing.end_date)}
-                </dd>
-              </div>
-              <div className="flex justify-between">
-                <dt className="text-muted-foreground">Days requested</dt>
-                <dd className="text-foreground">{viewing.days_requested}</dd>
-              </div>
-              <div className="flex justify-between items-center">
-                <dt className="text-muted-foreground">Status</dt>
-                <dd>
-                  <StatusBadge status={viewing.status} />
-                </dd>
-              </div>
-              {viewing.reason && (
-                <div>
-                  <dt className="text-muted-foreground mb-1">Reason</dt>
-                  <dd className="text-foreground">{viewing.reason}</dd>
-                </div>
-              )}
-              {viewing.review_comment && (
-                <div>
-                  <dt className="text-muted-foreground mb-1">Reviewer comment</dt>
-                  <dd className="text-foreground">{viewing.review_comment}</dd>
-                </div>
-              )}
-              {viewing.reviewed_at && (
-                <div className="flex justify-between">
-                  <dt className="text-muted-foreground">Reviewed at</dt>
-                  <dd className="text-foreground">{new Date(viewing.reviewed_at).toLocaleString()}</dd>
-                </div>
-              )}
-            </dl>
+            <RequestDetailContent
+              data={{
+                id: viewing.id,
+                leaveTypeName: viewing.leave_type?.name ?? '—',
+                startDate: viewing.start_date,
+                endDate: viewing.end_date,
+                daysRequested: viewing.days_requested,
+                status: viewing.status,
+                reason: viewing.reason,
+                reviewComment: viewing.review_comment,
+                reviewedAt: viewing.reviewed_at,
+              }}
+            />
           )}
-          {viewing && <EventTimeline leaveRequestId={viewing.id} />}
         </DialogContent>
       </Dialog>
 
