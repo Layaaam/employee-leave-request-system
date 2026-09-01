@@ -11,6 +11,8 @@ type SearchParams = {
   status?: string
   leave_type_id?: string
   q?: string
+  date_from?: string
+  date_to?: string
   page?: string
 }
 
@@ -57,6 +59,12 @@ export default async function AdminRequestsPage({
   }
   if (sp.q) {
     query = query.ilike('reason', `%${sp.q}%`)
+  }
+  if (sp.date_from) {
+    query = query.gte('start_date', sp.date_from)
+  }
+  if (sp.date_to) {
+    query = query.lte('end_date', sp.date_to)
   }
 
   const requestsPromise = query

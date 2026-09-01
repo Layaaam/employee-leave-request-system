@@ -1,41 +1,32 @@
-import { redirect } from 'next/navigation'
 import type { ReactNode } from 'react'
-import { createClient } from '@/lib/supabase/server'
+import { Suspense } from 'react'
 import { signOut } from '@/app/dashboard/actions'
 import AdminSidebar from './AdminSidebar'
+import AdminHeader from './AdminHeader'
+import AdminContentSkeleton from './AdminContentSkeleton'
 
-export default async function AdminLayout({ children }: { children: ReactNode }) {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) {
-    redirect('/login')
-  }
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('full_name, role')
-    .eq('id', user.id)
-    .single()
-
-  if (profile?.role !== 'admin') {
-    redirect('/dashboard')
-  }
-
+// Deliberately NOT async. The sidebar needs no data at all, so it must
+// never sit behind a Suspense boundary — that's what was causing the
+// old "wrong loading state" flash (the whole layout used to await the
+// auth check before rendering anything, sidebar included).
+export default function AdminLayout({ children }: { children: ReactNode }) {
   return (
     <div className="flex-1 w-full flex flex-col md:flex-row bg-white/90 shadow-sm border border-border/60 overflow-hidden">
       <AdminSidebar signOutAction={signOut} />
 
       <div className="flex-1 p-6 md:p-8 overflow-y-auto bg-gradient-to-br from-white via-violet-50/30 to-pink-50/40">
-        <div className="mb-6">
-          <h1 className="text-xl font-semibold text-foreground">Admin Console</h1>
-          <p className="text-sm text-muted-foreground">
-            Signed in as {profile?.full_name ?? user.email}
-          </p>
-        </div>
-        {children}
+        <Suspense
+          fallback={
+            <div className="mb-6 animate-pulse space-y-2">
+              <div className="h-6 w-40 rounded bg-muted" />
+              <div className="h-4 w-32 rounded bg-muted" />
+            </div>
+          }
+        >
+          <AdminHeader />
+        </Suspense>
+
+        <Suspense fallback={<AdminContentSkeleton />}>{children}</Suspense>
       </div>
     </div>
   )

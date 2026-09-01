@@ -1,61 +1,53 @@
-import { IconCircleCheck, IconCircleX, IconClockHour4 } from '@tabler/icons-react'
+import Link from 'next/link'
+import { cn } from '@/lib/utils'
 
 export default function StatCards({
   pending,
   approved,
   rejected,
+  links,
+  activeStatus,
 }: {
   pending: number
   approved: number
   rejected: number
+  links?: Partial<Record<'pending' | 'approved' | 'rejected', string>>
+  activeStatus?: string
 }) {
-  const cards = [
-    {
-      label: 'Pending',
-      value: pending,
-      icon: IconClockHour4,
-      className: 'border-violet-100 bg-gradient-to-br from-violet-50 to-fuchsia-50',
-      iconClassName: 'bg-violet-100 text-violet-600',
-      valueClassName: 'text-violet-700',
-    },
-    {
-      label: 'Approved',
-      value: approved,
-      icon: IconCircleCheck,
-      className: 'border-emerald-100 bg-gradient-to-br from-white to-emerald-50',
-      iconClassName: 'bg-emerald-100 text-emerald-600',
-      valueClassName: 'text-emerald-700',
-    },
-    {
-      label: 'Rejected',
-      value: rejected,
-      icon: IconCircleX,
-      className: 'border-rose-100 bg-gradient-to-br from-white to-rose-50',
-      iconClassName: 'bg-rose-100 text-rose-600',
-      valueClassName: 'text-rose-700',
-    },
+  const items = [
+    { key: 'pending' as const, label: 'Pending', value: pending, dot: 'bg-amber-400' },
+    { key: 'approved' as const, label: 'Approved', value: approved, dot: 'bg-emerald-400' },
+    { key: 'rejected' as const, label: 'Rejected', value: rejected, dot: 'bg-rose-400' },
   ]
 
   return (
-    <div className="grid grid-cols-1 gap-3 mb-6 sm:grid-cols-3">
-      {cards.map((card) => {
-        const Icon = card.icon
-        return (
+    <div className="mb-6 flex flex-col gap-px overflow-hidden rounded-xl border border-border bg-border sm:flex-row">
+      {items.map((item) => {
+        const href = links?.[item.key]
+        const isActive = activeStatus === item.key
+        const content = (
           <div
-            key={card.label}
-            className={`rounded-lg border p-4 shadow-sm shadow-violet-100/40 ${card.className}`}
+            className={cn(
+              'flex flex-1 items-center gap-3 bg-card px-5 py-4 transition-colors',
+              href && 'hover:bg-accent/40',
+              isActive && 'bg-accent/60'
+            )}
           >
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">{card.label}</p>
-                <p className={`mt-2 text-3xl font-semibold leading-none ${card.valueClassName}`}>
-                  {card.value}
-                </p>
-              </div>
-              <span className={`grid size-10 place-items-center rounded-md ${card.iconClassName}`}>
-                <Icon className="size-5" />
-              </span>
-            </div>
+            <span className={cn('size-2 rounded-full', item.dot)} aria-hidden />
+            <span className="text-sm text-muted-foreground">{item.label}</span>
+            <span className="ml-auto text-xl font-semibold tabular-nums text-foreground">
+              {item.value}
+            </span>
+          </div>
+        )
+
+        return href ? (
+          <Link key={item.key} href={href} className="flex flex-1">
+            {content}
+          </Link>
+        ) : (
+          <div key={item.key} className="flex flex-1">
+            {content}
           </div>
         )
       })}

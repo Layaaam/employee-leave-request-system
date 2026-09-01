@@ -15,12 +15,20 @@ export default function FilterBar({
   currentParams,
 }: {
   leaveTypes: LeaveType[]
-  currentParams: { status?: string; leave_type_id?: string; q?: string }
+  currentParams: {
+    status?: string
+    leave_type_id?: string
+    q?: string
+    date_from?: string
+    date_to?: string
+  }
 }) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const [q, setQ] = useState(currentParams.q ?? '')
+  const [dateFrom, setDateFrom] = useState(currentParams.date_from ?? '')
+  const [dateTo, setDateTo] = useState(currentParams.date_to ?? '')
   const [isPending, startTransition] = useTransition()
 
   function updateParam(key: string, value: string) {
@@ -42,7 +50,17 @@ export default function FilterBar({
 
   function handleSearchSubmit(e: FormEvent) {
     e.preventDefault()
-    updateParam('q', q)
+    const params = new URLSearchParams(searchParams.toString())
+    if (q) params.set('q', q)
+    else params.delete('q')
+    if (dateFrom) params.set('date_from', dateFrom)
+    else params.delete('date_from')
+    if (dateTo) params.set('date_to', dateTo)
+    else params.delete('date_to')
+    params.delete('page')
+    startTransition(() => {
+      router.push(`${pathname}?${params.toString()}`)
+    })
   }
 
   return (
