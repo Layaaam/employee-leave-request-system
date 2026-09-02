@@ -13,3 +13,20 @@ export function formatDate(dateStr: string): string {
     timeZone: 'UTC',
   }).format(new Date(dateStr))
 }
+
+export function formatDateShort(dateStr: string): string {
+  return new Intl.DateTimeFormat('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    timeZone: 'UTC',
+  }).format(new Date(dateStr))
+}
+
+export function formatDateTime(dateStr: string): string {
+  return new Intl.DateTimeFormat('en-US', {
+    dateStyle: 'long',
+    timeStyle: 'short',
+  }).format(new Date(dateStr))
+}
+

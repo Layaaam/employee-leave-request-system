@@ -2,8 +2,14 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { requireAdmin } from '@/app/admin/data'
 
 export async function createLeaveType(formData: FormData) {
+  const admin = await requireAdmin()
+  if (!admin.ok) {
+    return { error: admin.error }
+  }
+
   const supabase = await createClient()
 
   const name = formData.get('name') as string
@@ -11,12 +17,21 @@ export async function createLeaveType(formData: FormData) {
   const rawDays = formData.get('default_days_allowed') as string
   const default_days_allowed = rawDays ? Number(rawDays) : null
   const is_active = formData.get('is_active') === 'on'
+  const rawNotice = formData.get('notice_period_days') as string
+  const notice_period_days = rawNotice ? Number(rawNotice) : null
+  const requires_documentation = formData.get('requires_documentation') === 'on'
+
+  if (!name || !name.trim()) {
+    return { error: 'Name is required.' }
+  }
 
   const { error } = await supabase.from('leave_types').insert({
     name,
     description,
     default_days_allowed,
     is_active,
+    notice_period_days,
+    requires_documentation,
   })
 
   if (error) {
@@ -24,10 +39,16 @@ export async function createLeaveType(formData: FormData) {
   }
 
   revalidatePath('/admin/leave-types')
+  revalidatePath('/dashboard')
   return { error: null }
 }
 
 export async function updateLeaveType(id: string, formData: FormData) {
+  const admin = await requireAdmin()
+  if (!admin.ok) {
+    return { error: admin.error }
+  }
+
   const supabase = await createClient()
 
   const name = formData.get('name') as string
@@ -35,10 +56,24 @@ export async function updateLeaveType(id: string, formData: FormData) {
   const rawDays = formData.get('default_days_allowed') as string
   const default_days_allowed = rawDays ? Number(rawDays) : null
   const is_active = formData.get('is_active') === 'on'
+  const rawNotice = formData.get('notice_period_days') as string
+  const notice_period_days = rawNotice ? Number(rawNotice) : null
+  const requires_documentation = formData.get('requires_documentation') === 'on'
+
+  if (!name || !name.trim()) {
+    return { error: 'Name is required.' }
+  }
 
   const { error } = await supabase
     .from('leave_types')
-    .update({ name, description, default_days_allowed, is_active })
+    .update({
+      name,
+      description,
+      default_days_allowed,
+      is_active,
+      notice_period_days,
+      requires_documentation,
+    })
     .eq('id', id)
 
   if (error) {
@@ -46,10 +81,16 @@ export async function updateLeaveType(id: string, formData: FormData) {
   }
 
   revalidatePath('/admin/leave-types')
+  revalidatePath('/dashboard')
   return { error: null }
 }
 
 export async function deleteLeaveType(id: string) {
+  const admin = await requireAdmin()
+  if (!admin.ok) {
+    return { error: admin.error }
+  }
+
   const supabase = await createClient()
 
   const { error } = await supabase.from('leave_types').delete().eq('id', id)
@@ -65,5 +106,6 @@ export async function deleteLeaveType(id: string) {
   }
 
   revalidatePath('/admin/leave-types')
+  revalidatePath('/dashboard')
   return { error: null }
 }

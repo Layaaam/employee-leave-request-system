@@ -25,6 +25,8 @@ type LeaveType = {
   description: string | null
   default_days_allowed: number | null
   is_active: boolean
+  notice_period_days: number | null
+  requires_documentation: boolean
 }
 
 export default function LeaveTypeTable({ leaveTypes }: { leaveTypes: LeaveType[] }) {
@@ -62,6 +64,8 @@ export default function LeaveTypeTable({ leaveTypes }: { leaveTypes: LeaveType[]
             <tr>
               <th className="px-4 py-2 text-left font-medium text-muted-foreground">Name</th>
               <th className="px-4 py-2 text-left font-medium text-muted-foreground">Default days</th>
+              <th className="px-4 py-2 text-left font-medium text-muted-foreground">Notice period</th>
+              <th className="px-4 py-2 text-left font-medium text-muted-foreground">Docs required</th>
               <th className="px-4 py-2 text-left font-medium text-muted-foreground">Status</th>
               <th className="px-4 py-2 text-right font-medium text-muted-foreground">Actions</th>
             </tr>
@@ -76,6 +80,10 @@ export default function LeaveTypeTable({ leaveTypes }: { leaveTypes: LeaveType[]
                   )}
                 </td>
                 <td className="px-4 py-2 text-muted-foreground">{lt.default_days_allowed ?? '—'}</td>
+                <td className="px-4 py-2 text-muted-foreground">
+                  {lt.notice_period_days ? `${lt.notice_period_days} days` : 'None (retroactive OK)'}
+                </td>
+                <td className="px-4 py-2 text-muted-foreground">{lt.requires_documentation ? 'Yes' : 'No'}</td>
                 <td className="px-4 py-2">
                   <Badge variant={lt.is_active ? 'approved' : 'cancelled'}>
                     {lt.is_active ? 'Active' : 'Inactive'}

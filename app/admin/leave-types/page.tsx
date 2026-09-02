@@ -1,10 +1,16 @@
 import { createClient } from '@/lib/supabase/server'
+import { getAdminIdentity } from '@/app/admin/data'
 import LeaveTypeTable from './LeaveTypeTable'
 import NewLeaveTypeButton from './NewLeaveTypeButton'
 
 export default async function LeaveTypesPage() {
+  await getAdminIdentity()
+
   const supabase = await createClient()
-  const { data: leaveTypes, error } = await supabase.from('leave_types').select('*').order('name')
+  const { data: leaveTypes, error } = await supabase
+    .from('leave_types')
+    .select('id, name, description, default_days_allowed, is_active, notice_period_days, requires_documentation')
+    .order('name')
 
   return (
     <div>

@@ -8,8 +8,6 @@ export async function POST(
 ) {
   const { id } = await params
 
-  // Verify identity and role using the normal RLS-enforced client — never
-  // trust a role claimed by the client itself.
   const supabase = await createClient()
   const {
     data: { user },
@@ -29,10 +27,8 @@ export async function POST(
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
-  // Only after the role check passes do we use the service-role client,
-  // which bypasses RLS to apply the status change.
   const service = createServiceClient()
-  const { error } = await service
+  const { data: updated, error } = await service
     .from('leave_requests')
     .update({
       status: 'approved',
@@ -41,9 +37,19 @@ export async function POST(
       review_comment: null,
     })
     .eq('id', id)
+    .eq('status', 'pending')
+    .select('id')
+    .maybeSingle()
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+
+  if (!updated) {
+    return NextResponse.json(
+      { error: 'This request no longer exists or is not pending, so it cannot be approved.' },
+      { status: 409 }
+    )
   }
 
   return NextResponse.json({ success: true })
