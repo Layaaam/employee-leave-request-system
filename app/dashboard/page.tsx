@@ -11,6 +11,8 @@ type SearchParams = {
   status?: string
   leave_type_id?: string
   q?: string
+  date_from?: string
+  date_to?: string
   page?: string
 }
 
@@ -53,12 +55,18 @@ export default async function DashboardPage({
   if (sp.q) {
     query = query.ilike('reason', `%${sp.q}%`)
   }
+  if (sp.date_from) {
+    query = query.gte('start_date', sp.date_from)
+  }
+  if (sp.date_to) {
+    query = query.lte('end_date', sp.date_to)
+  }
 
   const { data: requests, error, count } = await query
 
   const { data: leaveTypes } = await supabase
     .from('leave_types')
-    .select('id, name, default_days_allowed, notice_period_days, requires_documentation')
+    .select('id, name, default_days_allowed, requires_documentation')
     .eq('is_active', true)
     .order('name')
 

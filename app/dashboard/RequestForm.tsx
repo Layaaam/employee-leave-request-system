@@ -4,11 +4,11 @@ import { useState, useTransition, useMemo } from 'react'
 import { toast } from 'sonner'
 import { createLeaveRequest, updateLeaveRequest } from './actions'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
+import { cn } from '@/lib/utils'
 import DatePicker from './DatePicker'
 
 type LeaveType = {
@@ -25,6 +25,8 @@ type ExistingRequest = {
   days_requested: number
   reason: string | null
 }
+
+type FieldName = 'leave_type_id' | 'start_date' | 'end_date' | 'general'
 
 function inclusiveDayCount(start: string, end: string, excludeWeekends: boolean): number | null {
   if (!start || !end) return null
@@ -57,46 +59,64 @@ export default function RequestForm({
   onDone: () => void
 }) {
   const [error, setError] = useState<string | null>(null)
+  const [errorField, setErrorField] = useState<FieldName | null>(null)
   const [leaveTypeId, setLeaveTypeId] = useState(existing?.leave_type_id ?? '')
   const [startDate, setStartDate] = useState(existing?.start_date ?? '')
   const [endDate, setEndDate] = useState(existing?.end_date ?? '')
-  const [daysRequested, setDaysRequested] = useState<number | ''>(existing?.days_requested ?? '')
   const [excludeWeekends, setExcludeWeekends] = useState(false)
-  const [daysManuallyEdited, setDaysManuallyEdited] = useState(false)
   const [isPending, startTransition] = useTransition()
   const selectedLeaveType = useMemo(
     () => leaveTypes.find((lt) => lt.id === leaveTypeId),
     [leaveTypes, leaveTypeId]
   )
 
-  function recalcDays(start: string, end: string, weekends: boolean) {
-    const computed = inclusiveDayCount(start, end, weekends)
-    if (computed !== null) setDaysRequested(computed)
+  const daysRequested = useMemo(
+    () => inclusiveDayCount(startDate, endDate, excludeWeekends),
+    [startDate, endDate, excludeWeekends]
+  )
+
+  function clearFieldError(field: FieldName) {
+    if (errorField === field) {
+      setError(null)
+      setErrorField(null)
+    }
   }
 
   function handleStartChange(next: string) {
     setStartDate(next)
-    if (!daysManuallyEdited) recalcDays(next, endDate, excludeWeekends)
+    clearFieldError('start_date')
   }
 
   function handleEndChange(next: string) {
     setEndDate(next)
-    if (!daysManuallyEdited) recalcDays(startDate, next, excludeWeekends)
-  }
-
-  function handleWeekendToggle(checked: boolean) {
-    setExcludeWeekends(checked)
-    setDaysManuallyEdited(false)
-    recalcDays(startDate, endDate, checked)
-  }
-
-  function handleRecalculate() {
-    setDaysManuallyEdited(false)
-    recalcDays(startDate, endDate, excludeWeekends)
+    clearFieldError('end_date')
   }
 
   function handleSubmit(formData: FormData) {
     setError(null)
+    setErrorField(null)
+
+    if (!leaveTypeId) {
+      setError('Please select a leave type.')
+      setErrorField('leave_type_id')
+      return
+    }
+    if (!startDate) {
+      setError('Please select a start date.')
+      setErrorField('start_date')
+      return
+    }
+    if (!endDate) {
+      setError('Please select an end date.')
+      setErrorField('end_date')
+      return
+    }
+    if (endDate < startDate) {
+      setError('End date cannot be before the start date.')
+      setErrorField('end_date')
+      return
+    }
+
     startTransition(async () => {
       const result = existing
         ? await updateLeaveRequest(existing.id, formData)
@@ -104,6 +124,7 @@ export default function RequestForm({
 
       if (result?.error) {
         setError(result.error)
+        setErrorField((result as { field?: FieldName }).field ?? 'general')
         toast.error('Could not save request', { description: result.error })
         return
       }
@@ -116,8 +137,14 @@ export default function RequestForm({
     <form action={handleSubmit} className="space-y-4">
       <div className="space-y-1.5">
         <Label htmlFor="leave_type_id">Leave type</Label>
-        <Select value={leaveTypeId} onValueChange={setLeaveTypeId}>
-          <SelectTrigger id="leave_type_id">
+        <Select
+          value={leaveTypeId}
+          onValueChange={(v) => {
+            setLeaveTypeId(v)
+            clearFieldError('leave_type_id')
+          }}
+        >
+          <SelectTrigger id="leave_type_id" className={cn(errorField === 'leave_type_id' && 'border-destructive')}>
             <SelectValue placeholder="Select a leave type" />
           </SelectTrigger>
           <SelectContent>
@@ -129,18 +156,42 @@ export default function RequestForm({
           </SelectContent>
         </Select>
         <input type="hidden" name="leave_type_id" value={leaveTypeId} required />
+        {errorField === 'leave_type_id' && (
+          <p role="alert" className="text-xs text-destructive">
+            {error}
+          </p>
+        )}
       </div>
 
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1.5">
           <Label htmlFor="start_date">Start date</Label>
-          <DatePicker value={startDate} onChange={handleStartChange} />
+          <DatePicker
+            value={startDate}
+            onChange={handleStartChange}
+            className={cn(errorField === 'start_date' && 'border-destructive')}
+          />
           <input type="hidden" name="start_date" value={startDate} required />
+          {errorField === 'start_date' && (
+            <p role="alert" className="text-xs text-destructive">
+              {error}
+            </p>
+          )}
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="end_date">End date</Label>
-          <DatePicker value={endDate} onChange={handleEndChange} min={startDate || undefined} />
+          <DatePicker
+            value={endDate}
+            onChange={handleEndChange}
+            min={startDate || undefined}
+            className={cn(errorField === 'end_date' && 'border-destructive')}
+          />
           <input type="hidden" name="end_date" value={endDate} required />
+          {errorField === 'end_date' && (
+            <p role="alert" className="text-xs text-destructive">
+              {error}
+            </p>
+          )}
         </div>
       </div>
 
@@ -154,42 +205,22 @@ export default function RequestForm({
         <Checkbox
           id="exclude_weekends"
           checked={excludeWeekends}
-          onCheckedChange={(checked) => handleWeekendToggle(checked === true)}
+          onCheckedChange={(checked) => setExcludeWeekends(checked === true)}
         />
         <Label htmlFor="exclude_weekends" className="cursor-pointer text-sm">
           Exclude weekends from day count
         </Label>
+        <input type="hidden" name="exclude_weekends" value={excludeWeekends ? 'true' : 'false'} />
       </div>
 
       <div className="space-y-1.5">
-        <div className="flex items-center justify-between">
-          <Label htmlFor="days_requested">Days requested</Label>
-          {daysManuallyEdited && (
-            <button
-              type="button"
-              onClick={handleRecalculate}
-              className="text-xs text-primary underline underline-offset-2"
-            >
-              Recalculate from dates
-            </button>
-          )}
+        <Label>Days requested</Label>
+        <div className="flex h-9 items-center rounded-md border border-input bg-muted/50 px-3 text-sm text-foreground">
+          {daysRequested !== null ? daysRequested : '—'}
         </div>
-        <Input
-          id="days_requested"
-          name="days_requested"
-          type="number"
-          min={1}
-          required
-          value={daysRequested}
-          onChange={(e) => {
-            setDaysManuallyEdited(true)
-            setDaysRequested(e.target.value === '' ? '' : Number(e.target.value))
-          }}
-        />
         <p className="text-xs text-muted-foreground">
-          {daysManuallyEdited
-            ? 'Manually set — changing the dates will no longer overwrite this.'
-            : 'Auto-calculated from the selected dates. Type a new value to override.'}
+          Calculated automatically from the selected dates
+          {excludeWeekends ? ' (weekends excluded)' : ''}.
         </p>
       </div>
 
@@ -198,7 +229,7 @@ export default function RequestForm({
         <Textarea id="reason" name="reason" rows={3} defaultValue={existing?.reason ?? ''} />
       </div>
 
-      {error && (
+      {error && errorField === 'general' && (
         <p role="alert" className="text-sm text-destructive">
           {error}
         </p>

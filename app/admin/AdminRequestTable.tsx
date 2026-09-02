@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { toast } from 'sonner'
 import {
+  IconArrowRight,
   IconCalendar,
   IconCheck,
   IconChevronLeft,
@@ -89,6 +90,13 @@ export default function AdminRequestTable({
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
+  const hasActiveFilters = Boolean(
+    searchParams.get('q') ||
+      searchParams.get('date_from') ||
+      searchParams.get('date_to') ||
+      searchParams.get('status') ||
+      searchParams.get('leave_type_id')
+  )
   const [viewing, setViewing] = useState<AdminLeaveRequest | null>(null)
   const [rejecting, setRejecting] = useState<AdminLeaveRequest | null>(null)
   const [bulkRejecting, setBulkRejecting] = useState(false)
@@ -252,7 +260,9 @@ export default function AdminRequestTable({
 
         {requests.length === 0 ? (
           <div className="rounded-md border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
-            No leave requests match your filters. Try adjusting the filters above.
+            {hasActiveFilters
+              ? 'No leave requests match your filters. Try adjusting the filters above.'
+              : 'There are no leave requests in the system yet.'}
           </div>
         ) : viewMode === 'calendar' ? (
           <AdminRequestCalendar requests={requests} onViewRequest={viewCalendarRequest} />
@@ -268,8 +278,10 @@ export default function AdminRequestTable({
                     </div>
                     <StatusBadge status={r.status} />
                   </div>
-                  <p className="text-sm text-muted-foreground">
-                    {formatDateShort(r.start_date)} {'->'} {formatDateShort(r.end_date)} - {r.days_requested} days
+                  <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                    {formatDateShort(r.start_date)}
+                    <IconArrowRight size={14} className="shrink-0 text-muted-foreground/70" />
+                    {formatDateShort(r.end_date)} - {r.days_requested} days
                   </p>
                   <p className="text-xs text-muted-foreground/80">{filedTiming(r.created_at, r.start_date)}</p>
                   <div className="flex flex-wrap gap-2 mt-3">{actionButtons(r)}</div>
@@ -313,8 +325,10 @@ export default function AdminRequestTable({
                       <td className="px-4 py-3 text-foreground">{r.employee?.full_name ?? '-'}</td>
                       <td className="px-4 py-3 text-foreground">{r.leave_type?.name ?? '-'}</td>
                       <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">
-                        <div>
-                          {formatDateShort(r.start_date)} {'->'} {formatDateShort(r.end_date)}
+                        <div className="flex items-center gap-1.5">
+                          {formatDateShort(r.start_date)}
+                          <IconArrowRight size={14} className="shrink-0 text-muted-foreground/70" />
+                          {formatDateShort(r.end_date)}
                         </div>
                         <div className="text-xs text-muted-foreground/80">
                           {filedTiming(r.created_at, r.start_date)}

@@ -2,11 +2,6 @@ import { cache } from 'react'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 
-/**
- * Wrapped in React's cache() so EmployeeSidebarData, DashboardHeader,
- * and page.tsx can each call this independently in the same request
- * without tripling the Supabase round trips.
- */
 export const getDashboardIdentity = cache(async () => {
   const supabase = await createClient()
 

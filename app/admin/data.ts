@@ -2,11 +2,6 @@ import { cache } from 'react'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 
-/**
- * Wrapped in React's cache() so calling this from multiple Server
- * Components in the same request (AdminHeader, page.tsx, etc.) only
- * hits Supabase once per request instead of once per caller.
- */
 export const getAdminIdentity = cache(async () => {
   const supabase = await createClient()
 
@@ -30,3 +25,31 @@ export const getAdminIdentity = cache(async () => {
 
   return { user, profile }
 })
+
+
+export async function requireAdmin(): Promise<
+  | { ok: true; user: { id: string } }
+  | { ok: false; error: string }
+> {
+  const supabase = await createClient()
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    return { ok: false, error: 'You must be signed in to do this.' }
+  }
+
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single()
+
+  if (profile?.role !== 'admin') {
+    return { ok: false, error: 'Only administrators can do this.' }
+  }
+
+  return { ok: true, user }
+}

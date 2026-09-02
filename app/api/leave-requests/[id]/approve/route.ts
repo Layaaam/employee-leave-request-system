@@ -28,7 +28,7 @@ export async function POST(
   }
 
   const service = createServiceClient()
-  const { error } = await service
+  const { data: updated, error } = await service
     .from('leave_requests')
     .update({
       status: 'approved',
@@ -37,9 +37,19 @@ export async function POST(
       review_comment: null,
     })
     .eq('id', id)
+    .eq('status', 'pending')
+    .select('id')
+    .maybeSingle()
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+
+  if (!updated) {
+    return NextResponse.json(
+      { error: 'This request no longer exists or is not pending, so it cannot be approved.' },
+      { status: 409 }
+    )
   }
 
   return NextResponse.json({ success: true })

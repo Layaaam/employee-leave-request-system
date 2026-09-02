@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { IconCalendar, IconChevronLeft, IconChevronRight } from '@tabler/icons-react'
+import { IconCalendar, IconChevronLeft, IconChevronRight, IconX } from '@tabler/icons-react'
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
@@ -32,17 +32,24 @@ export default function DatePicker({
   value,
   onChange,
   min,
+  max,
   placeholder = 'Select date',
+  clearable = false,
+  className,
 }: {
   value: string
   onChange: (value: string) => void
   min?: string
+  max?: string
   placeholder?: string
+  clearable?: boolean
+  className?: string
 }) {
   const [open, setOpen] = useState(false)
   const [viewDate, setViewDate] = useState(() => (value ? parseLocalDate(value) : new Date()))
 
   const minDate = min ? parseLocalDate(min) : null
+  const maxDate = max ? parseLocalDate(max) : null
   const year = viewDate.getFullYear()
   const month = viewDate.getMonth()
   const firstOfMonth = new Date(year, month, 1)
@@ -54,8 +61,9 @@ export default function DatePicker({
   for (let d = 1; d <= daysInMonth; d++) cells.push(new Date(year, month, d))
 
   function isDisabled(d: Date) {
-    if (!minDate) return false
-    return d.getTime() < minDate.getTime()
+    if (minDate && d.getTime() < minDate.getTime()) return true
+    if (maxDate && d.getTime() > maxDate.getTime()) return true
+    return false
   }
   function isSelected(d: Date) {
     return value === toDateStr(d)
@@ -64,15 +72,49 @@ export default function DatePicker({
     const t = new Date()
     return d.getFullYear() === t.getFullYear() && d.getMonth() === t.getMonth() && d.getDate() === t.getDate()
   }
+  function handleOpenChange(next: boolean) {
+    setOpen(next)
+    if (next) setViewDate(value ? parseLocalDate(value) : new Date())
+  }
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
-        <Button type="button" variant="outline" className="w-full justify-between font-normal">
-          <span className={cn(!value && 'text-muted-foreground')}>
+        <Button
+          type="button"
+          variant="outline"
+          className={cn('w-full justify-between font-normal', className)}
+        >
+          <span className={cn('truncate', !value && 'text-muted-foreground')}>
             {value ? formatDisplay(value) : placeholder}
           </span>
-          <IconCalendar className="text-muted-foreground" />
+          <span className="flex shrink-0 items-center gap-1">
+            {clearable && value && (
+              <span
+                role="button"
+                aria-label="Clear date"
+                tabIndex={0}
+                className="flex items-center rounded-sm p-0.5 text-muted-foreground hover:text-foreground"
+                onPointerDown={(e) => e.stopPropagation()}
+                onMouseDown={(e) => e.stopPropagation()}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  e.preventDefault()
+                  onChange('')
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.stopPropagation()
+                    e.preventDefault()
+                    onChange('')
+                  }
+                }}
+              >
+                <IconX size={16} />
+              </span>
+            )}
+            <IconCalendar className="text-muted-foreground" size={16} />
+          </span>
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-64">

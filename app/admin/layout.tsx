@@ -1,11 +1,14 @@
 import type { ReactNode } from 'react'
 import { Suspense } from 'react'
 import { signOut } from '@/app/dashboard/actions'
+import { getAdminIdentity } from './data'
 import AdminSidebar from './AdminSidebar'
 import AdminHeader from './AdminHeader'
 import AdminContentSkeleton from './AdminContentSkeleton'
 
-export default function AdminLayout({ children }: { children: ReactNode }) {
+export default async function AdminLayout({ children }: { children: ReactNode }) {
+  await getAdminIdentity()
+
   return (
     <div className="flex-1 w-full flex flex-col md:flex-row bg-white/90 shadow-sm border border-border/60 overflow-hidden">
       <AdminSidebar signOutAction={signOut} />

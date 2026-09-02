@@ -4,6 +4,7 @@ import { useState, useTransition } from 'react'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { toast } from 'sonner'
 import {
+  IconArrowRight,
   IconCalendar,
   IconChevronLeft,
   IconChevronRight,
@@ -11,13 +12,14 @@ import {
   IconLayoutList,
   IconPencil,
   IconTrash,
+  IconX,
 } from '@tabler/icons-react'
 import StatusBadge from './StatusBadge'
 import RequestForm from './RequestForm'
 import RequestDetailContent from './RequestDetailContent'
 import { type LeaveRequestEvent } from './EventTimeline'
 import EmployeeRequestCalendar, { type CalendarLeaveRequest } from './EmployeeRequestCalendar'
-import { deleteLeaveRequest } from './actions'
+import { deleteLeaveRequest, cancelLeaveRequest } from './actions'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { formatDateShort, cn } from '@/lib/utils'
@@ -35,8 +37,15 @@ import {
 type LeaveType = {
   id: string
   name: string
-  notice_period_days: number | null
   requires_documentation: boolean
+}
+
+function todayDateStr(): string {
+  const now = new Date()
+  const yyyy = now.getFullYear()
+  const mm = String(now.getMonth() + 1).padStart(2, '0')
+  const dd = String(now.getDate()).padStart(2, '0')
+  return `${yyyy}-${mm}-${dd}`
 }
 
 type LeaveRequest = {
@@ -93,10 +102,19 @@ export default function RequestTable({
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
+  const hasActiveFilters = Boolean(
+    searchParams.get('q') ||
+      searchParams.get('date_from') ||
+      searchParams.get('date_to') ||
+      searchParams.get('status') ||
+      searchParams.get('leave_type_id')
+  )
   const [viewing, setViewing] = useState<LeaveRequest | null>(null)
   const [editing, setEditing] = useState<LeaveRequest | null>(null)
   const [deletingRequest, setDeletingRequest] = useState<LeaveRequest | null>(null)
+  const [cancellingRequest, setCancellingRequest] = useState<LeaveRequest | null>(null)
   const [isPending, startTransition] = useTransition()
+  const [isCancelling, startCancelling] = useTransition()
   const [isPaginating, startPaginating] = useTransition()
   const [viewMode, setViewMode] = useState<ViewMode>('table')
 
@@ -117,6 +135,20 @@ export default function RequestTable({
         toast.success('Request deleted')
       }
       setDeletingRequest(null)
+    })
+  }
+
+  function handleCancel() {
+    if (!cancellingRequest) return
+    const id = cancellingRequest.id
+    startCancelling(async () => {
+      const result = await cancelLeaveRequest(id)
+      if (result?.error) {
+        toast.error('Could not cancel request', { description: result.error })
+      } else {
+        toast.success('Request cancelled')
+      }
+      setCancellingRequest(null)
     })
   }
 
@@ -144,6 +176,16 @@ export default function RequestTable({
             <IconTrash /> Delete
           </Button>
         </>
+      )}
+      {r.status === 'approved' && r.start_date > todayDateStr() && (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-destructive hover:text-destructive"
+          onClick={() => setCancellingRequest(r)}
+        >
+          <IconX /> Cancel
+        </Button>
       )}
     </>
   )
@@ -183,7 +225,9 @@ export default function RequestTable({
 
         {requests.length === 0 ? (
           <div className="rounded-lg border border-dashed border-border bg-card p-8 text-center text-sm text-muted-foreground">
-            No leave requests match your filters yet. Try adjusting your filters, or create a new request.
+            {hasActiveFilters
+              ? 'No leave requests match your filters. Try adjusting the filters above.'
+              : "You haven't submitted any leave requests yet. Use \u201cNew request\u201d above to create one."}
           </div>
         ) : viewMode === 'calendar' ? (
           <EmployeeRequestCalendar requests={requests} onViewRequest={viewCalendarRequest} />
@@ -195,8 +239,10 @@ export default function RequestTable({
                   <div className="flex items-start justify-between gap-2 mb-2">
                     <div>
                       <p className="font-medium text-foreground">{r.leave_type?.name ?? '-'}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {formatDateShort(r.start_date)} {'->'} {formatDateShort(r.end_date)}
+                      <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                        {formatDateShort(r.start_date)}
+                        <IconArrowRight size={14} className="shrink-0 text-muted-foreground/70" />
+                        {formatDateShort(r.end_date)}
                       </p>
                     </div>
                     <StatusBadge status={r.status} />
@@ -226,7 +272,11 @@ export default function RequestTable({
                         {r.reason && <p className="mt-0.5 max-w-xs truncate text-xs text-muted-foreground">{r.reason}</p>}
                       </td>
                       <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">
-                        {formatDateShort(r.start_date)} {'->'} {formatDateShort(r.end_date)}
+                        <div className="flex items-center gap-1.5">
+                          {formatDateShort(r.start_date)}
+                          <IconArrowRight size={14} className="shrink-0 text-muted-foreground/70" />
+                          {formatDateShort(r.end_date)}
+                        </div>
                       </td>
                       <td className="px-4 py-3 text-muted-foreground">{r.days_requested}</td>
                       <td className="px-4 py-3">
@@ -326,6 +376,26 @@ export default function RequestTable({
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleDelete} disabled={isPending}>
               {isPending ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog
+        open={!!cancellingRequest}
+        onOpenChange={(open) => !open && setCancellingRequest(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancel this approved request?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will mark the request as cancelled. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Back</AlertDialogCancel>
+            <AlertDialogAction onClick={handleCancel} disabled={isCancelling}>
+              {isCancelling ? 'Cancelling...' : 'Cancel request'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

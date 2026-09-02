@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { getAdminIdentity } from './data'
 import FilterBar from './FilterBar'
 import AdminRequestTable from './AdminRequestTable'
 import StatCards from '@/app/dashboard/StatCards'
@@ -31,6 +32,8 @@ export default async function AdminRequestsPage({
 }: {
   searchParams: Promise<SearchParams>
 }) {
+  await getAdminIdentity()
+
   const sp = await searchParams
   const supabase = await createClient()
 

@@ -2,9 +2,11 @@
 
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import { useState, useTransition, type FormEvent } from 'react'
-import { IconLoader2 } from '@tabler/icons-react'
+import { IconLoader2, IconSearch, IconX } from '@tabler/icons-react'
 import { Input } from '@/components/ui/input'
+import { Button } from '@/components/ui/button'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
+import DatePicker from './DatePicker'
 
 type LeaveType = { id: string; name: string }
 
@@ -27,8 +29,6 @@ export default function FilterBar({
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const [q, setQ] = useState(currentParams.q ?? '')
-  const [dateFrom, setDateFrom] = useState(currentParams.date_from ?? '')
-  const [dateTo, setDateTo] = useState(currentParams.date_to ?? '')
   const [isPending, startTransition] = useTransition()
 
   function updateParam(key: string, value: string) {
@@ -46,16 +46,21 @@ export default function FilterBar({
 
   function handleSearchSubmit(e: FormEvent) {
     e.preventDefault()
-    const params = new URLSearchParams(searchParams.toString())
-    if (q) params.set('q', q)
-    else params.delete('q')
-    if (dateFrom) params.set('date_from', dateFrom)
-    else params.delete('date_from')
-    if (dateTo) params.set('date_to', dateTo)
-    else params.delete('date_to')
-    params.delete('page')
+    updateParam('q', q)
+  }
+
+  const hasActiveFilters = Boolean(
+    currentParams.q ||
+      currentParams.date_from ||
+      currentParams.date_to ||
+      currentParams.status ||
+      currentParams.leave_type_id
+  )
+
+  function handleClearAll() {
+    setQ('')
     startTransition(() => {
-      router.push(`${pathname}?${params.toString()}`)
+      router.push(pathname)
     })
   }
 
@@ -64,7 +69,7 @@ export default function FilterBar({
       className={`flex flex-wrap items-center gap-2 transition-opacity ${isPending ? 'opacity-60' : ''}`}
       aria-busy={isPending}
     >
-      <form onSubmit={handleSearchSubmit}>
+      <form onSubmit={handleSearchSubmit} className="flex items-center gap-1">
         <Input
           type="search"
           placeholder="Search reason…"
@@ -72,7 +77,28 @@ export default function FilterBar({
           onChange={(e) => setQ(e.target.value)}
           className="w-48"
         />
+        <Button type="submit" variant="ghost" size="icon" aria-label="Search">
+          <IconSearch className="text-muted-foreground" />
+        </Button>
       </form>
+
+      <DatePicker
+        value={currentParams.date_from ?? ''}
+        onChange={(v) => updateParam('date_from', v)}
+        max={currentParams.date_to || undefined}
+        placeholder="From date"
+        clearable
+        className="w-36"
+      />
+      <span className="text-xs text-muted-foreground">to</span>
+      <DatePicker
+        value={currentParams.date_to ?? ''}
+        onChange={(v) => updateParam('date_to', v)}
+        min={currentParams.date_from || undefined}
+        placeholder="To date"
+        clearable
+        className="w-36"
+      />
 
       <Select value={currentParams.status ?? ALL} onValueChange={(v) => updateParam('status', v)}>
         <SelectTrigger className="w-40">
@@ -103,6 +129,19 @@ export default function FilterBar({
           ))}
         </SelectContent>
       </Select>
+
+      {hasActiveFilters && (
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={handleClearAll}
+          className="border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
+        >
+          <IconX className="mr-1" size={14} />
+          Clear filters
+        </Button>
+      )}
 
       {isPending && <IconLoader2 className="animate-spin text-muted-foreground" />}
     </div>

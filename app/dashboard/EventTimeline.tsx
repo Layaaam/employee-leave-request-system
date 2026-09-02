@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { getLeaveRequestEvents } from './actions'
 
 export type LeaveRequestEvent = {
   id: string
@@ -29,18 +29,13 @@ export default function EventTimeline({
 
     let cancelled = false
     async function load() {
-      const supabase = createClient()
-      const { data, error } = await supabase
-        .from('leave_request_events')
-        .select('id, previous_status, new_status, comment, created_at, actor_id')
-        .eq('leave_request_id', leaveRequestId)
-        .order('created_at', { ascending: true })
+      const result = await getLeaveRequestEvents(leaveRequestId)
 
       if (cancelled) return
-      if (error) {
-        setError(error.message)
+      if (result.error) {
+        setError(result.error)
       } else {
-        setEvents(data)
+        setEvents(result.events)
       }
     }
     load()

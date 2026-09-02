@@ -8,7 +8,7 @@ export default async function OverviewPage() {
 
   const { data: leaveTypes } = await supabase
     .from('leave_types')
-    .select('id, name, default_days_allowed, notice_period_days, requires_documentation')
+    .select('id, name, default_days_allowed, requires_documentation')
     .eq('is_active', true)
     .order('name')
 

@@ -3,10 +3,11 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
-import { IconClipboardList, IconTag, IconLogout } from '@tabler/icons-react'
+import { IconClipboardList, IconTag, IconLogout, IconCalendarStats } from '@tabler/icons-react'
 
 const links = [
   { href: '/admin', label: 'Leave Requests', icon: IconClipboardList },
+  { href: '/admin/overview', label: 'Leave Overview', icon: IconCalendarStats },
   { href: '/admin/leave-types', label: 'Leave Types', icon: IconTag },
 ]
 

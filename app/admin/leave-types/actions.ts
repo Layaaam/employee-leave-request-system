@@ -2,8 +2,14 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { requireAdmin } from '@/app/admin/data'
 
 export async function createLeaveType(formData: FormData) {
+  const admin = await requireAdmin()
+  if (!admin.ok) {
+    return { error: admin.error }
+  }
+
   const supabase = await createClient()
 
   const name = formData.get('name') as string
@@ -14,6 +20,10 @@ export async function createLeaveType(formData: FormData) {
   const rawNotice = formData.get('notice_period_days') as string
   const notice_period_days = rawNotice ? Number(rawNotice) : null
   const requires_documentation = formData.get('requires_documentation') === 'on'
+
+  if (!name || !name.trim()) {
+    return { error: 'Name is required.' }
+  }
 
   const { error } = await supabase.from('leave_types').insert({
     name,
@@ -34,6 +44,11 @@ export async function createLeaveType(formData: FormData) {
 }
 
 export async function updateLeaveType(id: string, formData: FormData) {
+  const admin = await requireAdmin()
+  if (!admin.ok) {
+    return { error: admin.error }
+  }
+
   const supabase = await createClient()
 
   const name = formData.get('name') as string
@@ -44,6 +59,10 @@ export async function updateLeaveType(id: string, formData: FormData) {
   const rawNotice = formData.get('notice_period_days') as string
   const notice_period_days = rawNotice ? Number(rawNotice) : null
   const requires_documentation = formData.get('requires_documentation') === 'on'
+
+  if (!name || !name.trim()) {
+    return { error: 'Name is required.' }
+  }
 
   const { error } = await supabase
     .from('leave_types')
@@ -67,6 +86,11 @@ export async function updateLeaveType(id: string, formData: FormData) {
 }
 
 export async function deleteLeaveType(id: string) {
+  const admin = await requireAdmin()
+  if (!admin.ok) {
+    return { error: admin.error }
+  }
+
   const supabase = await createClient()
 
   const { error } = await supabase.from('leave_types').delete().eq('id', id)

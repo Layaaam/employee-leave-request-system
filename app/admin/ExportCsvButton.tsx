@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation'
 import { toast } from 'sonner'
 import { IconDownload } from '@tabler/icons-react'
 import { Button } from '@/components/ui/button'
-import { createClient } from '@/lib/supabase/client'
+import { exportLeaveRequestsCsv } from './actions'
 
 function escapeCsvField(value: string): string {
   if (value.includes(',') || value.includes('"') || value.includes('\n')) {
@@ -20,30 +20,22 @@ export default function ExportCsvButton() {
 
   function handleExport() {
     startTransition(async () => {
-      const supabase = createClient()
+      const status = searchParams.get('status') ?? undefined
+      const leaveTypeId = searchParams.get('leave_type_id') ?? undefined
+      const q = searchParams.get('q') ?? undefined
 
-      let query = supabase
-        .from('leave_requests')
-        .select(
-          `start_date, end_date, days_requested, status, reason, review_comment, created_at,
-          leave_type:leave_types(name),
-          employee:profiles!leave_requests_employee_id_fkey(full_name)`
-        )
-        .order('created_at', { ascending: false })
+      const result = await exportLeaveRequestsCsv({
+        status,
+        leave_type_id: leaveTypeId,
+        q,
+      })
 
-      const status = searchParams.get('status')
-      const leaveTypeId = searchParams.get('leave_type_id')
-      const q = searchParams.get('q')
-      if (status) query = query.eq('status', status)
-      if (leaveTypeId) query = query.eq('leave_type_id', leaveTypeId)
-      if (q) query = query.ilike('reason', `%${q}%`)
-
-      const { data, error } = await query
-
-      if (error || !data) {
-        toast.error('Could not export CSV', { description: error?.message })
+      if ('error' in result) {
+        toast.error('Could not export CSV', { description: result.error })
         return
       }
+
+      const { data } = result
 
       if (data.length === 0) {
         toast.error('Nothing to export', { description: 'No requests match the current filters.' })
