@@ -100,6 +100,7 @@ export default function OverviewClient({
                 reviewedAt: viewing.reviewed_at,
                 employeeName: viewing.employee?.full_name,
               }}
+              isAdmin
             />
           )}
         </DialogContent>

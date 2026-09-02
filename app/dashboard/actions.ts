@@ -309,6 +309,63 @@ export async function getLeaveRequestEvents(
   return { events: events ?? [] }
 }
 
+export type LeaveRequestCommentRow = {
+  id: string
+  comment: string
+  created_at: string
+  author_id: string | null
+  author: { full_name: string } | { full_name: string }[] | null
+}
+
+export async function getLeaveRequestComments(
+  leaveRequestId: string
+): Promise<
+  { comments: LeaveRequestCommentRow[]; error?: undefined } | { comments?: undefined; error: string }
+> {
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    return { error: 'You must be signed in to view this.' }
+  }
+
+  const { data: request, error: requestError } = await supabase
+    .from('leave_requests')
+    .select('id, employee_id')
+    .eq('id', leaveRequestId)
+    .single()
+
+  if (requestError || !request) {
+    return { error: 'Leave request not found.' }
+  }
+
+  if (request.employee_id !== user.id) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+
+    if (profile?.role !== 'admin') {
+      return { error: 'Leave request not found.' }
+    }
+  }
+
+  const { data: comments, error: commentsError } = await supabase
+    .from('leave_request_comments')
+    .select('id, comment, created_at, author_id, author:profiles!leave_request_comments_author_id_fkey(full_name)')
+    .eq('leave_request_id', leaveRequestId)
+    .order('created_at', { ascending: true })
+
+  if (commentsError) {
+    return { error: commentsError.message }
+  }
+
+  return { comments: (comments ?? []) as LeaveRequestCommentRow[] }
+}
+
 export async function cancelLeaveRequest(id: string) {
   const supabase = await createClient()
   const {

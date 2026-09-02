@@ -397,6 +397,7 @@ export default function AdminRequestTable({
                 reviewerName: viewing.reviewer?.full_name,
                 events: viewing.events,
               }}
+              isAdmin
             />
           )}
         </DialogContent>

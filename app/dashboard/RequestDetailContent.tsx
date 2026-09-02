@@ -1,5 +1,6 @@
 import StatusBadge from './StatusBadge'
 import EventTimeline, { type LeaveRequestEvent } from './EventTimeline'
+import RequestComments from './RequestComments'
 import { formatDate, formatDateTime, cn } from '@/lib/utils'
 
 type Status = 'pending' | 'approved' | 'rejected' | 'cancelled'
@@ -19,7 +20,13 @@ export type RequestDetailData = {
   events?: LeaveRequestEvent[]
 }
 
-export default function RequestDetailContent({ data }: { data: RequestDetailData }) {
+export default function RequestDetailContent({
+  data,
+  isAdmin = false,
+}: {
+  data: RequestDetailData
+  isAdmin?: boolean
+}) {
   const isReviewed = data.status === 'approved' || data.status === 'rejected'
   const reviewPanelClass =
     data.status === 'approved'
@@ -71,6 +78,8 @@ export default function RequestDetailContent({ data }: { data: RequestDetailData
           {data.reviewComment && <p className="text-sm text-foreground">{data.reviewComment}</p>}
         </div>
       )}
+
+      <RequestComments leaveRequestId={data.id} canAdd={isAdmin && data.status === 'pending'} />
 
       <EventTimeline leaveRequestId={data.id} initialEvents={data.events} />
     </div>

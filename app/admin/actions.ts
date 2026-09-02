@@ -1,7 +1,57 @@
 'use server'
 
+import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { requireAdmin } from './data'
+
+export async function addLeaveRequestComment(
+  leaveRequestId: string,
+  comment: string
+): Promise<{ error: string | null }> {
+  const admin = await requireAdmin()
+  if (!admin.ok) {
+    return { error: admin.error }
+  }
+
+  const trimmed = comment.trim()
+  if (!trimmed) {
+    return { error: 'Comment cannot be empty.' }
+  }
+  if (trimmed.length > 2000) {
+    return { error: 'Comment is too long (2000 characters max).' }
+  }
+
+  const supabase = await createClient()
+
+  const { data: request, error: requestError } = await supabase
+    .from('leave_requests')
+    .select('id, status')
+    .eq('id', leaveRequestId)
+    .single()
+
+  if (requestError || !request) {
+    return { error: 'Leave request not found.' }
+  }
+  if (request.status !== 'pending') {
+    return { error: 'Comments can only be added while a request is still pending.' }
+  }
+
+  const { error } = await supabase.from('leave_request_comments').insert({
+    leave_request_id: leaveRequestId,
+    author_id: admin.user.id,
+    comment: trimmed,
+  })
+
+  if (error) {
+    return { error: error.message }
+  }
+
+  revalidatePath('/admin')
+  revalidatePath('/admin/overview')
+  revalidatePath('/dashboard')
+  revalidatePath('/dashboard/overview')
+  return { error: null }
+}
 
 export type ExportRow = {
   start_date: string

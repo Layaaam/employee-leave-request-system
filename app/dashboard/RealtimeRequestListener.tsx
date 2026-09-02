@@ -33,6 +33,19 @@ export default function RealtimeRequestListener({ employeeId }: { employeeId: st
           router.refresh()
         }
       )
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'leave_request_comments',
+          filter: `employee_id=eq.${employeeId}`,
+        },
+        () => {
+          toast.info('An admin commented on one of your leave requests')
+          router.refresh()
+        }
+      )
       .subscribe()
 
     return () => {
