@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { getLeaveRequestComments, type LeaveRequestCommentRow } from './actions'
 import { addLeaveRequestComment } from '@/app/admin/actions'
-import { formatDateTime, cn } from '@/lib/utils'
+import { formatDateTime } from '@/lib/utils'
 
 function authorName(author: LeaveRequestCommentRow['author']): string {
   if (!author) return 'Admin'
@@ -14,7 +14,7 @@ function authorName(author: LeaveRequestCommentRow['author']): string {
   return a?.full_name ?? 'Admin'
 }
 
-const COMMENT_TRUNCATE_LENGTH = 200
+const COMMENT_TRUNCATE_LENGTH = 120
 
 function CommentBody({ comment }: { comment: string }) {
   const [expanded, setExpanded] = useState(false)
@@ -23,18 +23,21 @@ function CommentBody({ comment }: { comment: string }) {
     isLong && !expanded ? `${comment.slice(0, COMMENT_TRUNCATE_LENGTH).trimEnd()}…` : comment
 
   return (
-    <p className="mt-0.5 text-muted-foreground break-words whitespace-pre-wrap">
-      {displayText}
+    <div className="mt-0.5 min-w-0 text-muted-foreground">
+      <span className="whitespace-pre-wrap break-all">
+        {displayText}
+      </span>
+
       {isLong && (
         <button
           type="button"
-          onClick={() => setExpanded((v) => !v)}
+          onClick={() => setExpanded((value) => !value)}
           className="ml-1 font-medium text-foreground underline underline-offset-2 hover:no-underline"
         >
           {expanded ? 'See less' : 'See more'}
         </button>
       )}
-    </p>
+    </div>
   )
 }
 
@@ -52,16 +55,21 @@ export default function RequestComments({
 
   useEffect(() => {
     let cancelled = false
+
     async function load() {
       const result = await getLeaveRequestComments(leaveRequestId)
+
       if (cancelled) return
+
       if (result.error) {
         setError(result.error)
       } else {
         setComments(result.comments)
       }
     }
+
     load()
+
     return () => {
       cancelled = true
     }
@@ -69,10 +77,16 @@ export default function RequestComments({
 
   async function handleAdd() {
     const trimmed = draft.trim()
+
     if (!trimmed) return
 
     setSubmitting(true)
-    const result = await addLeaveRequestComment(leaveRequestId, trimmed)
+
+    const result = await addLeaveRequestComment(
+      leaveRequestId,
+      trimmed
+    )
+
     setSubmitting(false)
 
     if (result.error) {
@@ -81,33 +95,53 @@ export default function RequestComments({
     }
 
     setDraft('')
+
     const refreshed = await getLeaveRequestComments(leaveRequestId)
+
     if (!refreshed.error) {
       setComments(refreshed.comments)
     }
+
     toast.success('Comment added')
   }
 
   return (
-    <div className="rounded-md border border-border bg-card px-3 py-3 space-y-3">
-      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Comments</p>
+    <div className="min-w-0 space-y-3 rounded-md border border-border bg-card px-3 py-3">
+      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        Comments
+      </p>
 
-      {error && <p className="text-xs text-destructive">Could not load comments: {error}</p>}
+      {error && (
+        <p className="text-xs text-destructive">
+          Could not load comments: {error}
+        </p>
+      )}
 
       {comments === null && !error && (
-        <p className="text-xs text-muted-foreground">Loading comments...</p>
+        <p className="text-xs text-muted-foreground">
+          Loading comments...
+        </p>
       )}
 
       {comments !== null && comments.length === 0 && (
-        <p className="text-xs text-muted-foreground">No comments yet.</p>
+        <p className="text-xs text-muted-foreground">
+          No comments yet.
+        </p>
       )}
 
       {comments !== null && comments.length > 0 && (
-        <ul className="space-y-3">
+        <ul className="min-w-0 space-y-3">
           {comments.map((c) => (
-            <li key={c.id} className="text-xs">
-              <p className="font-medium text-foreground">{authorName(c.author)}</p>
+            <li
+              key={c.id}
+              className="min-w-0 text-xs"
+            >
+              <p className="font-medium text-foreground">
+                {authorName(c.author)}
+              </p>
+
               <CommentBody comment={c.comment} />
+
               <p className="mt-0.5 text-muted-foreground/70">
                 {formatDateTime(c.created_at)}
               </p>
@@ -115,6 +149,7 @@ export default function RequestComments({
           ))}
         </ul>
       )}
+
       {canAdd && (
         <div className="space-y-2 pt-1">
           <Textarea
@@ -124,7 +159,12 @@ export default function RequestComments({
             rows={2}
             maxLength={2000}
           />
-          <Button size="sm" onClick={handleAdd} disabled={submitting || !draft.trim()}>
+
+          <Button
+            size="sm"
+            onClick={handleAdd}
+            disabled={submitting || !draft.trim()}
+          >
             {submitting ? 'Adding...' : 'Add comment'}
           </Button>
         </div>
