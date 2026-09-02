@@ -14,7 +14,6 @@ import DatePicker from './DatePicker'
 type LeaveType = {
   id: string
   name: string
-  notice_period_days: number | null
   requires_documentation: boolean
 }
 
@@ -25,17 +24,6 @@ type ExistingRequest = {
   end_date: string
   days_requested: number
   reason: string | null
-}
-
-function todayStr(): string {
-  const d = new Date()
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-}
-
-function addDays(dateStr: string, days: number): string {
-  const d = new Date(dateStr + 'T00:00:00Z')
-  d.setUTCDate(d.getUTCDate() + days)
-  return d.toISOString().slice(0, 10)
 }
 
 function inclusiveDayCount(start: string, end: string, excludeWeekends: boolean): number | null {
@@ -74,21 +62,12 @@ export default function RequestForm({
   const [endDate, setEndDate] = useState(existing?.end_date ?? '')
   const [daysRequested, setDaysRequested] = useState<number | ''>(existing?.days_requested ?? '')
   const [excludeWeekends, setExcludeWeekends] = useState(false)
-  // Tracks whether the user has manually typed into the days field — once
-  // true, date changes stop silently overwriting their entry. This is the
-  // fix for "cannot be adjusted manually since the basis is still the
-  // start/end date": previously every date change recalculated and
-  // clobbered any manual edit unconditionally.
   const [daysManuallyEdited, setDaysManuallyEdited] = useState(false)
   const [isPending, startTransition] = useTransition()
-
   const selectedLeaveType = useMemo(
     () => leaveTypes.find((lt) => lt.id === leaveTypeId),
     [leaveTypes, leaveTypeId]
   )
-
-  const noticeDays = selectedLeaveType?.notice_period_days ?? 0
-  const minStartDate = noticeDays > 0 ? addDays(todayStr(), noticeDays) : undefined
 
   function recalcDays(start: string, end: string, weekends: boolean) {
     const computed = inclusiveDayCount(start, end, weekends)
@@ -107,9 +86,6 @@ export default function RequestForm({
 
   function handleWeekendToggle(checked: boolean) {
     setExcludeWeekends(checked)
-    // An explicit toggle of the calculation basis is a deliberate request
-    // to recompute — always honor it, even if the user had previously
-    // edited the days field by hand.
     setDaysManuallyEdited(false)
     recalcDays(startDate, endDate, checked)
   }
@@ -158,23 +134,19 @@ export default function RequestForm({
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1.5">
           <Label htmlFor="start_date">Start date</Label>
-          <DatePicker value={startDate} onChange={handleStartChange} min={minStartDate} />
+          <DatePicker value={startDate} onChange={handleStartChange} />
           <input type="hidden" name="start_date" value={startDate} required />
         </div>
         <div className="space-y-1.5">
           <Label htmlFor="end_date">End date</Label>
-          <DatePicker value={endDate} onChange={handleEndChange} min={startDate || minStartDate} />
+          <DatePicker value={endDate} onChange={handleEndChange} min={startDate || undefined} />
           <input type="hidden" name="end_date" value={endDate} required />
         </div>
       </div>
 
-      {selectedLeaveType && (
+      {selectedLeaveType?.requires_documentation && (
         <p className="text-xs text-muted-foreground -mt-2">
-          {noticeDays > 0
-            ? `${selectedLeaveType.name} requires ${noticeDays} day${noticeDays === 1 ? '' : 's'} advance notice.`
-            : `${selectedLeaveType.name} can be filed for dates already passed, consistent with common practice for urgent leave.`}
-          {selectedLeaveType.requires_documentation &&
-            ' Supporting documentation will need to be submitted separately.'}
+          Supporting documentation for {selectedLeaveType.name} will need to be submitted separately.
         </p>
       )}
 

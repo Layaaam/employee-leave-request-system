@@ -2,7 +2,6 @@ import { createClient } from '@/lib/supabase/server'
 import FilterBar from './FilterBar'
 import RequestTable from './RequestTable'
 import NewRequestButton from './NewRequestButton'
-import LeaveBalance from './LeaveBalance'
 import RealtimeRequestListener from './RealtimeRequestListener'
 import { getDashboardIdentity } from './data'
 
@@ -12,8 +11,6 @@ type SearchParams = {
   status?: string
   leave_type_id?: string
   q?: string
-  date_from?: string
-  date_to?: string
   page?: string
 }
 
@@ -34,12 +31,8 @@ export default async function DashboardPage({
   searchParams: Promise<SearchParams>
 }) {
   const sp = await searchParams
-
-  // Deduped against the layout's own call via React cache() — this does
-  // not trigger a second round trip, it just gives us `user` here too.
   const { user } = await getDashboardIdentity()
   const supabase = await createClient()
-
   const page = Math.max(1, Number(sp.page) || 1)
   const from = (page - 1) * PAGE_SIZE
   const to = from + PAGE_SIZE - 1
@@ -60,12 +53,6 @@ export default async function DashboardPage({
   if (sp.q) {
     query = query.ilike('reason', `%${sp.q}%`)
   }
-  if (sp.date_from) {
-    query = query.gte('start_date', sp.date_from)
-  }
-  if (sp.date_to) {
-    query = query.lte('end_date', sp.date_to)
-  }
 
   const { data: requests, error, count } = await query
 
@@ -75,29 +62,20 @@ export default async function DashboardPage({
     .eq('is_active', true)
     .order('name')
 
-  const currentYear = new Date().getFullYear()
-  const { data: approvedThisYear } = await supabase
-    .from('leave_requests')
-    .select('leave_type_id, days_requested')
-    .eq('employee_id', user.id)
-    .eq('status', 'approved')
-    .gte('start_date', `${currentYear}-01-01`)
-    .lte('start_date', `${currentYear}-12-31`)
-
-  const usage = (approvedThisYear ?? []).reduce<Record<string, number>>((acc, r) => {
-    acc[r.leave_type_id] = (acc[r.leave_type_id] ?? 0) + r.days_requested
-    return acc
-  }, {})
-
   const totalPages = count ? Math.max(1, Math.ceil(count / PAGE_SIZE)) : 1
 
   return (
     <>
       <RealtimeRequestListener employeeId={user.id} />
 
-      <LeaveBalance leaveTypes={leaveTypes ?? []} usage={usage} />
+      <div className="mb-6">
+        <h1 className="text-xl font-semibold text-foreground">My Requests</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Track and manage the leave requests you&apos;ve submitted.
+        </p>
+      </div>
 
-      <div className="flex items-center justify-between gap-4 my-4 flex-wrap">
+      <div className="flex items-center justify-between gap-4 mb-4 flex-wrap">
         <FilterBar leaveTypes={leaveTypes ?? []} currentParams={sp} />
         <NewRequestButton leaveTypes={leaveTypes ?? []} />
       </div>
@@ -108,13 +86,7 @@ export default async function DashboardPage({
         </p>
       )}
 
-      <RequestTable
-        requests={requests ?? []}
-        leaveTypes={leaveTypes ?? []}
-        page={page}
-        totalPages={totalPages}
-        totalCount={count ?? 0}
-      />
+      <RequestTable requests={requests ?? []} leaveTypes={leaveTypes ?? []} />
 
       {(count ?? 0) > 0 && (
         <div className="flex items-center justify-between mt-4 text-sm text-muted-foreground">

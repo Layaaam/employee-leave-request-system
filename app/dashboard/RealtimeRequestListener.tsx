@@ -5,12 +5,6 @@ import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
 
-// Subscribes to UPDATE events on this employee's own leave_requests rows,
-// so an approval or rejection from the admin console appears live without
-// the employee having to manually refresh. Mirrors the admin-side listener
-// (Phase F) but on the other side of the workflow — previously only new
-// submissions were realtime; status changes flowing back to the employee
-// were not.
 export default function RealtimeRequestListener({ employeeId }: { employeeId: string }) {
   const router = useRouter()
 

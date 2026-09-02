@@ -37,37 +37,31 @@ export default function LoginPage() {
 
   return (
     <main className="flex-1 flex flex-col md:flex-row">
-      {/* Brand panel — hidden on small screens, form fills the page instead */}
-      <div className="relative hidden md:flex md:w-1/2 flex-col justify-between overflow-hidden gradient-primary p-10 text-white">
-        <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-white/10" />
-        <div className="pointer-events-none absolute -bottom-32 -left-10 h-80 w-80 rounded-full bg-white/10" />
+      <div className="hidden md:flex md:w-1/2 flex-col justify-between bg-primary p-12 text-primary-foreground">
+        <span className="text-sm font-medium tracking-wide uppercase text-primary-foreground/70">
+          Leave Request System
+        </span>
 
-        <div className="relative flex items-center gap-2">
-          <div className="h-9 w-9 rounded-full bg-white/20 backdrop-blur" />
-          <span className="text-lg font-semibold">Leave Request System</span>
-        </div>
-
-        <div className="relative max-w-sm space-y-3">
-          <h2 className="text-2xl font-semibold leading-snug">
+        <div className="max-w-sm space-y-3">
+          <h2 className="text-3xl font-semibold leading-snug">
             Track and manage your time off, all in one place.
           </h2>
-          <p className="text-sm text-white/80">
+          <p className="text-sm text-primary-foreground/80">
             Submit requests, follow approvals in real time, and keep an eye on your
             remaining leave balance.
           </p>
         </div>
 
-        <p className="relative text-xs text-white/60">
+        <p className="text-xs text-primary-foreground/60">
           © {new Date().getFullYear()} Employee Leave Request System
         </p>
       </div>
 
       <div className="flex flex-1 items-center justify-center p-6">
         <div className="w-full max-w-sm">
-          <div className="mb-8 flex items-center gap-2 md:hidden">
-            <div className="h-9 w-9 rounded-full gradient-primary" />
-            <span className="text-lg font-semibold text-foreground">Leave Request System</span>
-          </div>
+          <span className="mb-8 block text-sm font-medium tracking-wide uppercase text-muted-foreground md:hidden">
+            Leave Request System
+          </span>
 
           <h1 className="mb-1 text-xl font-semibold text-foreground">Welcome back</h1>
           <p className="mb-6 text-sm text-muted-foreground">Sign in to continue.</p>

@@ -5,10 +5,6 @@ import AdminSidebar from './AdminSidebar'
 import AdminHeader from './AdminHeader'
 import AdminContentSkeleton from './AdminContentSkeleton'
 
-// Deliberately NOT async. The sidebar needs no data at all, so it must
-// never sit behind a Suspense boundary — that's what was causing the
-// old "wrong loading state" flash (the whole layout used to await the
-// auth check before rendering anything, sidebar included).
 export default function AdminLayout({ children }: { children: ReactNode }) {
   return (
     <div className="flex-1 w-full flex flex-col md:flex-row bg-white/90 shadow-sm border border-border/60 overflow-hidden">

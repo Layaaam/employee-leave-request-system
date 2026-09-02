@@ -48,6 +48,18 @@ function buildPageHref(searchParams: URLSearchParams, page: number) {
   return `?${params.toString()}`
 }
 
+function filedTiming(createdAt: string, startDate: string): string {
+  const created = new Date(createdAt)
+  const createdDateOnly = new Date(created.getFullYear(), created.getMonth(), created.getDate())
+  const [y, m, d] = startDate.split('-').map(Number)
+  const start = new Date(y, m - 1, d)
+  const diffDays = Math.round((start.getTime() - createdDateOnly.getTime()) / 86_400_000)
+
+  if (diffDays > 0) return `Filed ${diffDays} day${diffDays === 1 ? '' : 's'} ahead`
+  if (diffDays < 0) return `Filed ${Math.abs(diffDays)} day${Math.abs(diffDays) === 1 ? '' : 's'} late`
+  return 'Filed same day'
+}
+
 function TableSkeleton() {
   return (
     <div className="absolute inset-0 z-10 bg-card/70 backdrop-blur-[1px]">
@@ -259,6 +271,7 @@ export default function AdminRequestTable({
                   <p className="text-sm text-muted-foreground">
                     {formatDateShort(r.start_date)} {'->'} {formatDateShort(r.end_date)} - {r.days_requested} days
                   </p>
+                  <p className="text-xs text-muted-foreground/80">{filedTiming(r.created_at, r.start_date)}</p>
                   <div className="flex flex-wrap gap-2 mt-3">{actionButtons(r)}</div>
                 </div>
               ))}
@@ -300,7 +313,12 @@ export default function AdminRequestTable({
                       <td className="px-4 py-3 text-foreground">{r.employee?.full_name ?? '-'}</td>
                       <td className="px-4 py-3 text-foreground">{r.leave_type?.name ?? '-'}</td>
                       <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">
-                        {formatDateShort(r.start_date)} {'->'} {formatDateShort(r.end_date)}
+                        <div>
+                          {formatDateShort(r.start_date)} {'->'} {formatDateShort(r.end_date)}
+                        </div>
+                        <div className="text-xs text-muted-foreground/80">
+                          {filedTiming(r.created_at, r.start_date)}
+                        </div>
                       </td>
                       <td className="px-4 py-3 text-muted-foreground">{r.days_requested}</td>
                       <td className="px-4 py-3">

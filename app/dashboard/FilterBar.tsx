@@ -39,10 +39,6 @@ export default function FilterBar({
       params.delete(key)
     }
     params.delete('page')
-    // Wrapped in a transition so isPending gives immediate visible feedback
-    // while the server re-fetches — Next's automatic loading.tsx boundary
-    // doesn't reliably surface for same-route searchParam-only navigations
-    // that resolve quickly, which otherwise made filtering feel unresponsive.
     startTransition(() => {
       router.push(`${pathname}?${params.toString()}`)
     })

@@ -68,8 +68,6 @@ export default function DatePicker({
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        {/* justify-between guarantees the icon sits at the far right,
-            regardless of how long the formatted date text is. */}
         <Button type="button" variant="outline" className="w-full justify-between font-normal">
           <span className={cn(!value && 'text-muted-foreground')}>
             {value ? formatDisplay(value) : placeholder}
