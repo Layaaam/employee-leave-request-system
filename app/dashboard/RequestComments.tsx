@@ -14,6 +14,30 @@ function authorName(author: LeaveRequestCommentRow['author']): string {
   return a?.full_name ?? 'Admin'
 }
 
+const COMMENT_TRUNCATE_LENGTH = 200
+
+function CommentBody({ comment }: { comment: string }) {
+  const [expanded, setExpanded] = useState(false)
+  const isLong = comment.length > COMMENT_TRUNCATE_LENGTH
+  const displayText =
+    isLong && !expanded ? `${comment.slice(0, COMMENT_TRUNCATE_LENGTH).trimEnd()}…` : comment
+
+  return (
+    <p className="mt-0.5 text-muted-foreground break-words whitespace-pre-wrap">
+      {displayText}
+      {isLong && (
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          className="ml-1 font-medium text-foreground underline underline-offset-2 hover:no-underline"
+        >
+          {expanded ? 'See less' : 'See more'}
+        </button>
+      )}
+    </p>
+  )
+}
+
 export default function RequestComments({
   leaveRequestId,
   canAdd,
@@ -83,7 +107,7 @@ export default function RequestComments({
           {comments.map((c) => (
             <li key={c.id} className="text-xs">
               <p className="font-medium text-foreground">{authorName(c.author)}</p>
-              <p className="mt-0.5 text-muted-foreground">{c.comment}</p>
+              <CommentBody comment={c.comment} />
               <p className="mt-0.5 text-muted-foreground/70">
                 {formatDateTime(c.created_at)}
               </p>
