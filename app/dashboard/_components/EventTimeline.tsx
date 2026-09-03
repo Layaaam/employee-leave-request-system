@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { getLeaveRequestEvents } from './actions'
+import { getLeaveRequestEvents } from '../actions'
 
 export type LeaveRequestEvent = {
   id: string

@@ -2,9 +2,9 @@ import type { ReactNode } from 'react'
 import { Suspense } from 'react'
 import { signOut } from '@/app/dashboard/actions'
 import { getAdminIdentity } from './data'
-import AdminSidebar from './AdminSidebar'
-import AdminHeader from './AdminHeader'
-import AdminContentSkeleton from './AdminContentSkeleton'
+import AdminSidebar from './_components/AdminSidebar'
+import AdminHeader from './_components/AdminHeader'
+import AdminContentSkeleton from './_components/AdminContentSkeleton'
 
 export default async function AdminLayout({ children }: { children: ReactNode }) {
   await getAdminIdentity()

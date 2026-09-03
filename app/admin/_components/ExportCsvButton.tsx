@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation'
 import { toast } from 'sonner'
 import { IconDownload } from '@tabler/icons-react'
 import { Button } from '@/components/ui/button'
-import { exportLeaveRequestsCsv } from './actions'
+import { exportLeaveRequestsCsv } from '../actions'
 
 function escapeCsvField(value: string): string {
   if (value.includes(',') || value.includes('"') || value.includes('\n')) {

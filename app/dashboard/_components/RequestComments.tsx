@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
-import { getLeaveRequestComments, type LeaveRequestCommentRow } from './actions'
+import { getLeaveRequestComments, type LeaveRequestCommentRow } from '../actions'
 import { addLeaveRequestComment } from '@/app/admin/actions'
 import { formatDateTime } from '@/lib/utils'
 

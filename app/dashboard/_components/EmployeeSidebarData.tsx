@@ -1,5 +1,5 @@
-import { getDashboardIdentity } from './data'
-import { signOut } from './actions'
+import { getDashboardIdentity } from '../data'
+import { signOut } from '../actions'
 import EmployeeSidebar from './EmployeeSidebar'
 
 export default async function EmployeeSidebarData() {

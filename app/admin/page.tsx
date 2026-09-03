@@ -1,10 +1,10 @@
 import { createClient } from '@/lib/supabase/server'
 import { getAdminIdentity } from './data'
-import FilterBar from './FilterBar'
-import AdminRequestTable from './AdminRequestTable'
-import StatCards from '@/app/dashboard/StatCards'
-import ExportCsvButton from './ExportCsvButton'
-import RealtimeRequestListener from './RealtimeRequestListener'
+import FilterBar from './_components/FilterBar'
+import AdminRequestTable from './_components/AdminRequestTable'
+import StatCards from '@/app/dashboard/_components/StatCards'
+import ExportCsvButton from './_components/ExportCsvButton'
+import RealtimeRequestListener from './_components/RealtimeRequestListener'
 
 const PAGE_SIZE = 10
 

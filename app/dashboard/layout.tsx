@@ -1,9 +1,9 @@
 import type { ReactNode } from 'react'
 import { Suspense } from 'react'
 import { signOut } from './actions'
-import EmployeeSidebar from './EmployeeSidebar'
-import EmployeeSidebarData from './EmployeeSidebarData'
-import DashboardHeader from './DashboardHeader'
+import EmployeeSidebar from './_components/EmployeeSidebar'
+import EmployeeSidebarData from './_components/EmployeeSidebarData'
+import DashboardHeader from './_components/DashboardHeader'
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   return (

@@ -6,49 +6,28 @@ import { toast } from 'sonner'
 import {
   IconArrowRight,
   IconCalendar,
+  IconCheck,
   IconChevronLeft,
   IconChevronRight,
   IconEye,
   IconLayoutList,
-  IconPencil,
-  IconTrash,
   IconX,
 } from '@tabler/icons-react'
-import StatusBadge from './StatusBadge'
-import RequestForm from './RequestForm'
-import RequestDetailContent from './RequestDetailContent'
-import { type LeaveRequestEvent } from './EventTimeline'
-import EmployeeRequestCalendar, { type CalendarLeaveRequest } from './EmployeeRequestCalendar'
-import { deleteLeaveRequest, cancelLeaveRequest } from './actions'
+import StatusBadge from '@/app/dashboard/_components/StatusBadge'
+import RequestDetailContent from '@/app/dashboard/_components/RequestDetailContent'
+import { type LeaveRequestEvent } from '@/app/dashboard/_components/EventTimeline'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { formatDateShort, cn } from '@/lib/utils'
-import {
-  AlertDialog,
-  AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogFooter,
-  AlertDialogTitle,
-  AlertDialogDescription,
-  AlertDialogAction,
-  AlertDialogCancel,
-} from '@/components/ui/alert-dialog'
+import RejectModal from './RejectModal'
+import BulkRejectModal from './BulkRejectModal'
+import AdminRequestCalendar, { type CalendarLeaveRequest } from './AdminRequestCalendar'
 
-type LeaveType = {
-  id: string
-  name: string
-  requires_documentation: boolean
-}
+type Person = { id: string; full_name: string } | null
+type ViewMode = 'table' | 'calendar'
 
-function todayDateStr(): string {
-  const now = new Date()
-  const yyyy = now.getFullYear()
-  const mm = String(now.getMonth() + 1).padStart(2, '0')
-  const dd = String(now.getDate()).padStart(2, '0')
-  return `${yyyy}-${mm}-${dd}`
-}
-
-type LeaveRequest = {
+type AdminLeaveRequest = {
   id: string
   start_date: string
   end_date: string
@@ -58,12 +37,11 @@ type LeaveRequest = {
   review_comment: string | null
   reviewed_at: string | null
   created_at: string
-  leave_type_id: string
   leave_type: { id: string; name: string } | null
+  employee: Person
+  reviewer: Person
   events?: LeaveRequestEvent[]
 }
-
-type ViewMode = 'table' | 'calendar'
 
 function buildPageHref(searchParams: URLSearchParams, page: number) {
   const params = new URLSearchParams(searchParams.toString())
@@ -71,13 +49,25 @@ function buildPageHref(searchParams: URLSearchParams, page: number) {
   return `?${params.toString()}`
 }
 
+function filedTiming(createdAt: string, startDate: string): string {
+  const created = new Date(createdAt)
+  const createdDateOnly = new Date(created.getFullYear(), created.getMonth(), created.getDate())
+  const [y, m, d] = startDate.split('-').map(Number)
+  const start = new Date(y, m - 1, d)
+  const diffDays = Math.round((start.getTime() - createdDateOnly.getTime()) / 86_400_000)
+
+  if (diffDays > 0) return `Filed ${diffDays} day${diffDays === 1 ? '' : 's'} ahead`
+  if (diffDays < 0) return `Filed ${Math.abs(diffDays)} day${Math.abs(diffDays) === 1 ? '' : 's'} late`
+  return 'Filed same day'
+}
+
 function TableSkeleton() {
   return (
-    <div className="absolute inset-0 z-10 rounded-lg bg-card/70 backdrop-blur-[1px]">
+    <div className="absolute inset-0 z-10 bg-card/70 backdrop-blur-[1px]">
       <div className="h-full animate-pulse p-4">
         <div className="mb-3 h-8 rounded-md bg-muted" />
         <div className="space-y-2">
-          {Array.from({ length: 5 }).map((_, index) => (
+          {Array.from({ length: 6 }).map((_, index) => (
             <div key={index} className="h-10 rounded-md bg-muted/80" />
           ))}
         </div>
@@ -86,15 +76,13 @@ function TableSkeleton() {
   )
 }
 
-export default function RequestTable({
+export default function AdminRequestTable({
   requests,
-  leaveTypes,
   page,
   totalPages,
   totalCount,
 }: {
-  requests: LeaveRequest[]
-  leaveTypes: LeaveType[]
+  requests: AdminLeaveRequest[]
   page: number
   totalPages: number
   totalCount: number
@@ -109,46 +97,79 @@ export default function RequestTable({
       searchParams.get('status') ||
       searchParams.get('leave_type_id')
   )
-  const [viewing, setViewing] = useState<LeaveRequest | null>(null)
-  const [editing, setEditing] = useState<LeaveRequest | null>(null)
-  const [deletingRequest, setDeletingRequest] = useState<LeaveRequest | null>(null)
-  const [cancellingRequest, setCancellingRequest] = useState<LeaveRequest | null>(null)
-  const [isPending, startTransition] = useTransition()
-  const [isCancelling, startCancelling] = useTransition()
+  const [viewing, setViewing] = useState<AdminLeaveRequest | null>(null)
+  const [rejecting, setRejecting] = useState<AdminLeaveRequest | null>(null)
+  const [bulkRejecting, setBulkRejecting] = useState(false)
+  const [approvingId, setApprovingId] = useState<string | null>(null)
+  const [isApproving, startApproving] = useTransition()
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [isBulkApproving, startBulkApproving] = useTransition()
   const [isPaginating, startPaginating] = useTransition()
   const [viewMode, setViewMode] = useState<ViewMode>('table')
 
+  const pendingRequests = requests.filter((r) => r.status === 'pending')
+  const allPendingSelected =
+    pendingRequests.length > 0 && pendingRequests.every((r) => selected.has(r.id))
+
+  function toggleOne(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  function toggleAllPending() {
+    setSelected(() => {
+      if (allPendingSelected) return new Set()
+      return new Set(pendingRequests.map((r) => r.id))
+    })
+  }
+
   function goToPage(nextPage: number) {
+    setSelected(new Set())
     startPaginating(() => {
       router.push(`${pathname}${buildPageHref(searchParams, nextPage)}`, { scroll: false })
     })
   }
 
-  function handleDelete() {
-    if (!deletingRequest) return
-    const id = deletingRequest.id
-    startTransition(async () => {
-      const result = await deleteLeaveRequest(id)
-      if (result?.error) {
-        toast.error('Could not delete request', { description: result.error })
-      } else {
-        toast.success('Request deleted')
+  function handleApprove(id: string) {
+    setApprovingId(id)
+    startApproving(async () => {
+      try {
+        const res = await fetch(`/api/leave-requests/${id}/approve`, { method: 'POST' })
+        const data = await res.json()
+        if (!res.ok) {
+          toast.error('Could not approve request', { description: data.error })
+        } else {
+          toast.success('Request approved')
+          router.refresh()
+        }
+      } catch {
+        toast.error('Could not approve request', { description: 'Network error - please try again.' })
+      } finally {
+        setApprovingId(null)
       }
-      setDeletingRequest(null)
     })
   }
 
-  function handleCancel() {
-    if (!cancellingRequest) return
-    const id = cancellingRequest.id
-    startCancelling(async () => {
-      const result = await cancelLeaveRequest(id)
-      if (result?.error) {
-        toast.error('Could not cancel request', { description: result.error })
-      } else {
-        toast.success('Request cancelled')
-      }
-      setCancellingRequest(null)
+  function handleBulkApprove() {
+    const ids = Array.from(selected)
+    startBulkApproving(async () => {
+      const results = await Promise.allSettled(
+        ids.map((id) =>
+          fetch(`/api/leave-requests/${id}/approve`, { method: 'POST' }).then((res) => {
+            if (!res.ok) throw new Error('failed')
+          })
+        )
+      )
+      const failed = results.filter((r) => r.status === 'rejected').length
+      const succeeded = ids.length - failed
+      if (succeeded > 0) toast.success(`${succeeded} request${succeeded === 1 ? '' : 's'} approved`)
+      if (failed > 0) toast.error(`${failed} request${failed === 1 ? '' : 's'} could not be approved`)
+      setSelected(new Set())
+      router.refresh()
     })
   }
 
@@ -157,35 +178,27 @@ export default function RequestTable({
     if (fullRequest) setViewing(fullRequest)
   }
 
-  const actionButtons = (r: LeaveRequest) => (
+  const isBusy = (id: string) => isApproving && approvingId === id
+
+  const actionButtons = (r: AdminLeaveRequest) => (
     <>
       <Button variant="ghost" size="sm" onClick={() => setViewing(r)}>
         <IconEye /> View
       </Button>
       {r.status === 'pending' && (
         <>
-          <Button variant="ghost" size="sm" onClick={() => setEditing(r)}>
-            <IconPencil /> Edit
-          </Button>
           <Button
-            variant="ghost"
             size="sm"
-            className="text-destructive hover:text-destructive"
-            onClick={() => setDeletingRequest(r)}
+            className="bg-emerald-600 text-white hover:bg-emerald-700"
+            onClick={() => handleApprove(r.id)}
+            disabled={isBusy(r.id)}
           >
-            <IconTrash /> Delete
+            <IconCheck /> {isBusy(r.id) ? 'Approving...' : 'Approve'}
+          </Button>
+          <Button variant="destructive" size="sm" onClick={() => setRejecting(r)}>
+            <IconX /> Reject
           </Button>
         </>
-      )}
-      {r.status === 'approved' && r.start_date > todayDateStr() && (
-        <Button
-          variant="ghost"
-          size="sm"
-          className="text-destructive hover:text-destructive"
-          onClick={() => setCancellingRequest(r)}
-        >
-          <IconX /> Cancel
-        </Button>
       )}
     </>
   )
@@ -220,17 +233,39 @@ export default function RequestTable({
         )}
       </div>
 
+      {selected.size > 0 && (
+        <div className="flex items-center justify-between gap-3 mb-3 rounded-md border border-primary/30 bg-accent px-4 py-2">
+          <p className="text-sm text-foreground">{selected.size} selected</p>
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              className="bg-emerald-600 text-white hover:bg-emerald-700"
+              onClick={handleBulkApprove}
+              disabled={isBulkApproving}
+            >
+              <IconCheck /> {isBulkApproving ? 'Approving...' : `Approve ${selected.size}`}
+            </Button>
+            <Button variant="destructive" size="sm" onClick={() => setBulkRejecting(true)}>
+              <IconX /> Reject {selected.size}
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => setSelected(new Set())}>
+              Clear
+            </Button>
+          </div>
+        </div>
+      )}
+
       <div className="relative" aria-busy={isPaginating}>
         {isPaginating && <TableSkeleton />}
 
         {requests.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-border bg-card p-8 text-center text-sm text-muted-foreground">
+          <div className="rounded-md border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
             {hasActiveFilters
               ? 'No leave requests match your filters. Try adjusting the filters above.'
-              : "You haven't submitted any leave requests yet. Use \u201cNew request\u201d above to create one."}
+              : 'There are no leave requests in the system yet.'}
           </div>
         ) : viewMode === 'calendar' ? (
-          <EmployeeRequestCalendar requests={requests} onViewRequest={viewCalendarRequest} />
+          <AdminRequestCalendar requests={requests} onViewRequest={viewCalendarRequest} />
         ) : (
           <>
             <div className="md:hidden space-y-3">
@@ -238,26 +273,37 @@ export default function RequestTable({
                 <div key={r.id} className="rounded-md border border-border bg-card p-4 shadow-sm shadow-violet-100/30">
                   <div className="flex items-start justify-between gap-2 mb-2">
                     <div>
-                      <p className="font-medium text-foreground">{r.leave_type?.name ?? '-'}</p>
-                      <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                        {formatDateShort(r.start_date)}
-                        <IconArrowRight size={14} className="shrink-0 text-muted-foreground/70" />
-                        {formatDateShort(r.end_date)}
-                      </p>
+                      <p className="font-medium text-foreground">{r.employee?.full_name ?? '-'}</p>
+                      <p className="text-sm text-muted-foreground">{r.leave_type?.name ?? '-'}</p>
                     </div>
                     <StatusBadge status={r.status} />
                   </div>
-                  <p className="text-sm text-muted-foreground">{r.days_requested} day request</p>
+                  <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                    {formatDateShort(r.start_date)}
+                    <IconArrowRight size={14} className="shrink-0 text-muted-foreground/70" />
+                    {formatDateShort(r.end_date)} - {r.days_requested} days
+                  </p>
+                  <p className="text-xs text-muted-foreground/80">{filedTiming(r.created_at, r.start_date)}</p>
                   <div className="flex flex-wrap gap-2 mt-3">{actionButtons(r)}</div>
                 </div>
               ))}
             </div>
 
-            <div className="hidden md:block overflow-x-auto rounded-lg border border-border bg-card shadow-sm shadow-violet-100/30">
+            <div className="hidden md:block overflow-x-auto rounded-lg border border-border bg-card shadow-sm shadow-violet-100/40">
               <table className="min-w-full divide-y divide-border text-sm">
                 <thead className="bg-muted/60">
                   <tr>
-                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">Request</th>
+                    <th className="w-10 px-4 py-3">
+                      {pendingRequests.length > 0 && (
+                        <Checkbox
+                          checked={allPendingSelected}
+                          onCheckedChange={toggleAllPending}
+                          aria-label="Select all pending"
+                        />
+                      )}
+                    </th>
+                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">Employee</th>
+                    <th className="px-4 py-3 text-left font-medium text-muted-foreground">Leave type</th>
                     <th className="px-4 py-3 text-left font-medium text-muted-foreground">Dates</th>
                     <th className="px-4 py-3 text-left font-medium text-muted-foreground">Days</th>
                     <th className="px-4 py-3 text-left font-medium text-muted-foreground">Status</th>
@@ -268,14 +314,24 @@ export default function RequestTable({
                   {requests.map((r) => (
                     <tr key={r.id} className="transition-colors hover:bg-muted/30">
                       <td className="px-4 py-3">
-                        <p className="font-medium text-foreground">{r.leave_type?.name ?? '-'}</p>
-                        {r.reason && <p className="mt-0.5 max-w-xs truncate text-xs text-muted-foreground">{r.reason}</p>}
+                        {r.status === 'pending' && (
+                          <Checkbox
+                            checked={selected.has(r.id)}
+                            onCheckedChange={() => toggleOne(r.id)}
+                            aria-label={`Select request from ${r.employee?.full_name ?? 'employee'}`}
+                          />
+                        )}
                       </td>
+                      <td className="px-4 py-3 text-foreground">{r.employee?.full_name ?? '-'}</td>
+                      <td className="px-4 py-3 text-foreground">{r.leave_type?.name ?? '-'}</td>
                       <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">
                         <div className="flex items-center gap-1.5">
                           {formatDateShort(r.start_date)}
                           <IconArrowRight size={14} className="shrink-0 text-muted-foreground/70" />
                           {formatDateShort(r.end_date)}
+                        </div>
+                        <div className="text-xs text-muted-foreground/80">
+                          {filedTiming(r.created_at, r.start_date)}
                         </div>
                       </td>
                       <td className="px-4 py-3 text-muted-foreground">{r.days_requested}</td>
@@ -337,69 +393,26 @@ export default function RequestTable({
                 reason: viewing.reason,
                 reviewComment: viewing.review_comment,
                 reviewedAt: viewing.reviewed_at,
+                employeeName: viewing.employee?.full_name,
+                reviewerName: viewing.reviewer?.full_name,
                 events: viewing.events,
               }}
+              isAdmin
             />
           )}
         </DialogContent>
       </Dialog>
 
-      <Dialog open={!!editing} onOpenChange={(open) => !open && setEditing(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit leave request</DialogTitle>
-          </DialogHeader>
-          {editing && (
-            <RequestForm
-              leaveTypes={leaveTypes}
-              existing={{
-                id: editing.id,
-                leave_type_id: editing.leave_type_id,
-                start_date: editing.start_date,
-                end_date: editing.end_date,
-                days_requested: editing.days_requested,
-                reason: editing.reason,
-              }}
-              onDone={() => setEditing(null)}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
-
-      <AlertDialog open={!!deletingRequest} onOpenChange={(open) => !open && setDeletingRequest(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete this leave request?</AlertDialogTitle>
-            <AlertDialogDescription>This cannot be undone.</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} disabled={isPending}>
-              {isPending ? 'Deleting...' : 'Delete'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      <AlertDialog
-        open={!!cancellingRequest}
-        onOpenChange={(open) => !open && setCancellingRequest(null)}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Cancel this approved request?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will mark the request as cancelled. This cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Back</AlertDialogCancel>
-            <AlertDialogAction onClick={handleCancel} disabled={isCancelling}>
-              {isCancelling ? 'Cancelling...' : 'Cancel request'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {rejecting && <RejectModal request={rejecting} onClose={() => setRejecting(null)} />}
+      {bulkRejecting && (
+        <BulkRejectModal
+          ids={Array.from(selected)}
+          onClose={() => {
+            setBulkRejecting(false)
+            setSelected(new Set())
+          }}
+        />
+      )}
     </>
   )
 }

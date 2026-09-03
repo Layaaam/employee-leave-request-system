@@ -1,4 +1,4 @@
-import { getAdminIdentity } from './data'
+import { getAdminIdentity } from '../data'
 
 export default async function AdminHeader() {
   const { user, profile } = await getAdminIdentity()

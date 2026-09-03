@@ -1,4 +1,4 @@
-import { getDashboardIdentity } from './data'
+import { getDashboardIdentity } from '../data'
 
 export default async function DashboardHeader() {
   const { user, profile } = await getDashboardIdentity()

@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
-import LeaveBalance from '../LeaveBalance'
+import LeaveBalance from '../_components/LeaveBalance'
 import { getDashboardIdentity } from '../data'
 
 export default async function OverviewPage() {

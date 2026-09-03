@@ -2,7 +2,7 @@
 
 import { useState, useTransition, useMemo } from 'react'
 import { toast } from 'sonner'
-import { createLeaveRequest, updateLeaveRequest } from './actions'
+import { createLeaveRequest, updateLeaveRequest } from '../actions'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'

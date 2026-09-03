@@ -6,7 +6,7 @@ import { IconLoader2, IconSearch, IconX } from '@tabler/icons-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'
-import DatePicker from '@/app/dashboard/DatePicker'
+import DatePicker from '@/app/dashboard/_components/DatePicker'
 
 type LeaveType = { id: string; name: string }
 

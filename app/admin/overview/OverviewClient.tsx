@@ -2,8 +2,8 @@
 
 import { useState } from 'react'
 import { IconArrowRight, IconUserCircle } from '@tabler/icons-react'
-import AdminRequestCalendar, { type CalendarLeaveRequest } from '../AdminRequestCalendar'
-import RequestDetailContent from '@/app/dashboard/RequestDetailContent'
+import AdminRequestCalendar, { type CalendarLeaveRequest } from '../_components/AdminRequestCalendar'
+import RequestDetailContent from '@/app/dashboard/_components/RequestDetailContent'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { formatDateShort } from '@/lib/utils'
 

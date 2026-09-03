@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import { IconArrowRight, IconChevronLeft, IconChevronRight } from '@tabler/icons-react'
-import StatusBadge from '@/app/dashboard/StatusBadge'
+import StatusBadge from '@/app/dashboard/_components/StatusBadge'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { formatDateShort, cn } from '@/lib/utils'

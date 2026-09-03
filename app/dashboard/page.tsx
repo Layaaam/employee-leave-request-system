@@ -1,8 +1,8 @@
 import { createClient } from '@/lib/supabase/server'
-import FilterBar from './FilterBar'
-import RequestTable from './RequestTable'
-import NewRequestButton from './NewRequestButton'
-import RealtimeRequestListener from './RealtimeRequestListener'
+import FilterBar from './_components/FilterBar'
+import RequestTable from './_components/RequestTable'
+import NewRequestButton from './_components/NewRequestButton'
+import RealtimeRequestListener from './_components/RealtimeRequestListener'
 import { getDashboardIdentity } from './data'
 
 const PAGE_SIZE = 5
