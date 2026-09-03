@@ -32,10 +32,10 @@ export default function EventTimeline({
       const result = await getLeaveRequestEvents(leaveRequestId)
 
       if (cancelled) return
-      if (result.error) {
-        setError(result.error)
-      } else {
+      if (result.events) {
         setEvents(result.events)
+      } else {
+        setError(result.error)
       }
     }
     load()

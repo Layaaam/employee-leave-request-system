@@ -36,7 +36,7 @@ export default function RequestDetailContent({
         : ''
 
   return (
-    <div className="space-y-5">
+    <div className="min-w-0 space-y-5">
       <div className="rounded-lg border border-border bg-gradient-to-br from-white to-purple-50/70 p-4">
         <div className="flex items-start justify-between gap-3">
           <div>

@@ -15,6 +15,7 @@ function authorName(author: LeaveRequestCommentRow['author']): string {
 }
 
 const COMMENT_TRUNCATE_LENGTH = 120
+const COMMENT_MAX_LENGTH = 2000
 
 function CommentBody({ comment }: { comment: string }) {
   const [expanded, setExpanded] = useState(false)
@@ -24,7 +25,7 @@ function CommentBody({ comment }: { comment: string }) {
 
   return (
     <div className="mt-0.5 min-w-0 text-muted-foreground">
-      <span className="whitespace-pre-wrap break-all">
+      <span className="whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
         {displayText}
       </span>
 
@@ -61,10 +62,10 @@ export default function RequestComments({
 
       if (cancelled) return
 
-      if (result.error) {
-        setError(result.error)
-      } else {
+      if (result.comments) {
         setComments(result.comments)
+      } else {
+        setError(result.error)
       }
     }
 
@@ -98,7 +99,7 @@ export default function RequestComments({
 
     const refreshed = await getLeaveRequestComments(leaveRequestId)
 
-    if (!refreshed.error) {
+    if (refreshed.comments) {
       setComments(refreshed.comments)
     }
 
@@ -154,19 +155,32 @@ export default function RequestComments({
         <div className="space-y-2 pt-1">
           <Textarea
             value={draft}
-            onChange={(e) => setDraft(e.target.value)}
+            onChange={(e) => setDraft(e.target.value.slice(0, COMMENT_MAX_LENGTH))}
             placeholder="Add a comment for the employee to see (e.g. request a document)..."
             rows={2}
-            maxLength={2000}
+            maxLength={COMMENT_MAX_LENGTH}
+            className="[overflow-wrap:anywhere]"
           />
 
-          <Button
-            size="sm"
-            onClick={handleAdd}
-            disabled={submitting || !draft.trim()}
-          >
-            {submitting ? 'Adding...' : 'Add comment'}
-          </Button>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p
+              className={`text-[11px] tabular-nums ${
+                draft.length >= COMMENT_MAX_LENGTH
+                  ? 'text-destructive'
+                  : 'text-muted-foreground/70'
+              }`}
+            >
+              {draft.length}/{COMMENT_MAX_LENGTH}
+            </p>
+
+            <Button
+              size="sm"
+              onClick={handleAdd}
+              disabled={submitting || !draft.trim()}
+            >
+              {submitting ? 'Adding...' : 'Add comment'}
+            </Button>
+          </div>
         </div>
       )}
     </div>

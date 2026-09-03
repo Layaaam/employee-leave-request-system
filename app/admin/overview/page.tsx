@@ -10,6 +10,11 @@ function todayDateStr(): string {
   return `${yyyy}-${mm}-${dd}`
 }
 
+function one<T>(value: T | T[] | null | undefined): T | null {
+  if (Array.isArray(value)) return value[0] ?? null
+  return value ?? null
+}
+
 export default async function AdminOverviewPage() {
   await getAdminIdentity()
   const supabase = await createClient()
@@ -57,7 +62,18 @@ export default async function AdminOverviewPage() {
         </p>
       )}
 
-      <OverviewClient requests={requests ?? []} activeLeave={activeLeave ?? []} />
+      <OverviewClient
+        requests={(requests ?? []).map((r) => ({
+          ...r,
+          leave_type: one(r.leave_type),
+          employee: one(r.employee),
+        }))}
+        activeLeave={(activeLeave ?? []).map((a) => ({
+          ...a,
+          leave_type: one(a.leave_type),
+          employee: one(a.employee),
+        }))}
+      />
     </div>
   )
 }

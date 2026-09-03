@@ -16,17 +16,6 @@ type SearchParams = {
   page?: string
 }
 
-function buildHref(params: SearchParams, page: number) {
-  const p = new URLSearchParams(
-    Object.entries(params).reduce<Record<string, string>>((acc, [k, v]) => {
-      if (v) acc[k] = v
-      return acc
-    }, {})
-  )
-  p.set('page', String(page))
-  return `?${p.toString()}`
-}
-
 export default async function DashboardPage({
   searchParams,
 }: {
@@ -94,27 +83,13 @@ export default async function DashboardPage({
         </p>
       )}
 
-      <RequestTable requests={requests ?? []} leaveTypes={leaveTypes ?? []} />
-
-      {(count ?? 0) > 0 && (
-        <div className="flex items-center justify-between mt-4 text-sm text-muted-foreground">
-          <span>
-            Page {page} of {totalPages}
-          </span>
-          <div className="flex gap-4">
-            {page > 1 && (
-              <a href={buildHref(sp, page - 1)} className="underline hover:text-foreground">
-                Previous
-              </a>
-            )}
-            {page < totalPages && (
-              <a href={buildHref(sp, page + 1)} className="underline hover:text-foreground">
-                Next
-              </a>
-            )}
-          </div>
-        </div>
-      )}
+      <RequestTable
+        requests={requests ?? []}
+        leaveTypes={leaveTypes ?? []}
+        page={page}
+        totalPages={totalPages}
+        totalCount={count ?? 0}
+      />
     </>
   )
 }
