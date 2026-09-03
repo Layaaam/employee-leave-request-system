@@ -7,10 +7,12 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { toast } from 'sonner'
+import { IconEye, IconEyeOff } from '@tabler/icons-react'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const router = useRouter()
@@ -96,15 +98,31 @@ export default function LoginPage() {
               <Label htmlFor="password" className="text-[13px] font-medium text-foreground">
                 Password
               </Label>
-              <Input
-                id="password"
-                type="password"
-                autoComplete="current-password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="h-11 border-border bg-card px-3.5 transition-colors duration-150 focus-visible:border-[var(--gold)] focus-visible:ring-[3px] focus-visible:ring-[var(--ring)]/20"
-              />
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  autoComplete="current-password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="h-11 border-border bg-card px-3.5 pr-11 transition-colors duration-150 focus-visible:border-[var(--gold)] focus-visible:ring-[3px] focus-visible:ring-[var(--ring)]/20"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  aria-pressed={showPassword}
+                  tabIndex={-1}
+                  className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:text-foreground"
+                >
+                  {showPassword ? (
+                    <IconEyeOff size={18} stroke={1.75} aria-hidden="true" />
+                  ) : (
+                    <IconEye size={18} stroke={1.75} aria-hidden="true" />
+                  )}
+                </button>
+              </div>
             </div>
 
             {error && (
