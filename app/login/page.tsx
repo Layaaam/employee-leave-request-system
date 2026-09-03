@@ -23,17 +23,25 @@ export default function LoginPage() {
     setError(null)
 
     const supabase = createClient()
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
-
-    setLoading(false)
+    const { data: signInData, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
 
     if (error) {
+      setLoading(false)
       setError(error.message)
       toast.error('Sign in failed', { description: error.message })
       return
     }
 
-    router.replace('/dashboard')
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('role')
+      .eq('id', signInData.user.id)
+      .single()
+
+    router.replace(profile?.role === 'admin' ? '/admin' : '/dashboard')
     router.refresh()
   }
 
